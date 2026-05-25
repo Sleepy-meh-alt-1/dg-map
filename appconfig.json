@@ -1,0 +1,12 @@
+{
+    "appName": "dg map",
+    "description": "",
+    "appUrl": "./index.html",
+    "configUrl": "./appconfig.json",
+    "iconUrl": "./images/icon.png",
+    "defaultWidth": 275,
+    "defaultHeight": 820,
+    "requestHandlers": [],
+    "activators": [],
+    "permissions": "pixel,gamestate,overlay"
+}

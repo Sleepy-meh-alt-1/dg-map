@@ -1,0 +1,134 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+  <title>DG Helper</title>
+
+  <link rel="stylesheet" href="https://runeapps.org/nis/nis.css">
+  <script src="https://www.unpkg.com/alt1/dist/base/index.js"></script>
+  <script src="https://www.unpkg.com/alt1/dist/ocr/index.js"></script>
+  <script src="https://www.unpkg.com/alt1/dist/chatbox/index.js"></script>
+
+  <style>
+
+    body {
+      display:flex;
+      flex-direction:column;
+      gap:16px;
+      padding:12px;
+      font-family:monospace;
+    }
+
+    .panel {
+      background:#111;
+      color:white;
+      border:2px solid #444;
+      padding:12px;
+      width:220px;
+    }
+
+    .panel-title {
+      font-weight:bold;
+      margin-bottom:8px;
+    }
+
+    .settings,
+    .controls {
+      display:flex;
+      flex-direction:column;
+      gap:10px;
+    }
+
+    .settings label,
+    .controls label {
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      gap:10px;
+    }
+
+    .radio-group {
+      display:flex;
+      gap:12px;
+    }
+
+    .radio-group label {
+      display:flex;
+      align-items:center;
+      gap:4px;
+    }
+
+    input[type="range"] {
+      width:100%;
+    }
+
+    hr {
+      border:0;
+      border-top:1px solid #333;
+      margin:8px 0;
+    }
+
+  </style>
+
+</head>
+
+<body class="nis">
+
+  <div id="stats" class="panel">
+    <div class="panel-title">DG STATS</div>
+    <hr>
+
+    <div>Visited: <span id="statVisited">-</span></div>
+    <div>Unknown: <span id="statUnknown">-</span></div>
+    <div>Locked: <span id="statLocked">-</span></div>
+    <div>Unreachable: <span id="statUnreachable">-</span></div>
+    <hr>
+
+    <div>Dead Ends: <span id="statDeadEnds">-</span></div>
+    <div>Branches: <span id="statBranches">-</span></div>
+    <hr>
+
+    <div>Player: <span id="statPlayer">-</span></div>
+    <hr>
+
+    <div>Completion: <span id="statCompletion">-</span>%</div>
+    <div>Time: <span id="statTime">-</span></div>
+    <div>Projected: <span id="statProjected">-</span></div>
+  </div>
+
+  <div class="panel settings">
+    <div class="panel-title">SETTINGS</div>
+
+    <label>Show Key Overlay <input type="checkbox" id="showKeyOverlay" checked></label>
+    <label>Show Crit Overlay <input type="checkbox" id="showCritOverlay" checked></label>
+
+    <label>Key Door (Have Key) <input type="color" id="colorKeyYes" value="#33aa33"></label>
+    <label>Key Door (No Key) <input type="color" id="colorKeyNo" value="#ff0000"></label>
+
+    <label>Crit Path True <input type="color" id="colorCritTrue" value="#ffd700"></label>
+    <label>Crit Path False <input type="color" id="colorCritFalse" value="#00bfff"></label>
+  </div>
+
+  <div class="panel">
+    <div class="panel-title">FLOOR SIZE</div>
+    <div class="radio-group">
+      <label><input type="radio" name="floorSize" value="small">Small</label>
+      <label><input type="radio" name="floorSize" value="medium">Medium</label>
+      <label><input type="radio" name="floorSize" value="large" checked>Large</label>
+    </div>
+  </div>
+
+  <div class="panel controls">
+    <div class="panel-title">DEBUG</div>
+    <label> Unknown Threshold <span id="unknownValue">37</span></label>
+    <input type="range" id="unknownSlider" min="0" max="50" value="37">
+
+    <label> Visited Threshold <span id="visitedValue">73</span> </label>
+    <input type="range" id="visitedSlider" min="0" max="100" value="73">
+  </div>
+
+  <script src="scripts/script.js"></script>
+</body>
+</html>
