@@ -799,6 +799,8 @@ function buildGrid() {
 
 
 function scanDungeonMap() {
+  start = performance.now();
+
   if (!grid || grid.length === 0) {
     return;
   }
@@ -822,6 +824,10 @@ function scanDungeonMap() {
   }
 
   showStats()
+
+  end = performance.now();
+
+  document.getElementById("statScanTime").innerText = Math.round(end - start);
 }
 
 setInterval(scanDungeonMap, 100);
