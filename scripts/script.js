@@ -767,7 +767,7 @@ function buildGrid() {
     const roomSize = 29;
     const gap = 3;
 
-    alt1.overLayText("MAP", 0xffffffff, 20, Math.floor(mapX + mapWidth/2), mapY, 3000);
+    alt1.overLayText("MAP", 0xffffffff, 20, Math.floor(mapX + mapWidth/2)-40, mapY-40, 3000);
 
     grid = [];
 
@@ -790,7 +790,6 @@ function buildGrid() {
                 player: false
             });
 
-
             //alt1.overLayRect(0xff00ff00, x, y, roomSize, roomSize, 1000, 2);
         }
 
@@ -810,14 +809,14 @@ function scanDungeonMap() {
       setRoomState(grid[row][col]);
 
       //DEBUG 
-      //alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 400, 1)
+      //alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 600, 1)
 
       if(room.state == "key" && SHOW_KEY_OVERLAY){
-        alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 400, 1)
+        alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 600, 1)
       }
 
       if (SHOW_CRIT_OVERLAY && room.crit != null) {
-          alt1.overLayRect(room.crit ? COLOR_CRIT_TRUE: COLOR_CRIT_FALSE, room.x, room.y, room.width, room.height, 400, 1);
+          alt1.overLayRect(room.crit ? COLOR_CRIT_TRUE: COLOR_CRIT_FALSE, room.x, room.y, room.width, room.height, 600, 1);
       }
     }
   }
@@ -844,10 +843,14 @@ function setRoomState(room) {
     const buffer = 2;
 
     const startX = img.width - buffer - sampleSize;
-    const startY = img.height - buffer - sampleSize;
+    const startY = buffer;
 
     let total = 0;
     let count = 0;
+
+    // DEBUG
+    //alt1.overLayRect(ORANGE, room.x + startX, room.y + startY, sampleSize, sampleSize, 400, 1)
+
 
     for (let y = startY; y < startY + sampleSize; y++) {
         for (let x = startX; x < startX + sampleSize; x++) {
