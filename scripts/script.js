@@ -121,9 +121,9 @@ keys = [
   },
   {
     "name": "Gold Rectangle Key",
-    "icon": "LFZt/ypVa/8qU2r/KVJo/ylQZv8oT2T/Jk5j/yA/Uf8gPlD/Hz1O/x88TP8fO0r/HTpJ/x05R/8EFBz/BBQc/wQUHP8EFBz/BBQc/wQUHP8EFRz/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8=",
-    "width": 7,
-    "height": 5
+    "icon": "KU9k/ydMYP8nSVz/JEZY/yNDVf8iQlT/IkBS/yA/Uf8gPk//Hz1N/x88TP8eOkr/HThI/xw3Rv8FGCD/BRcf/wUWHv8EFR3/BBUd/wQVHf8EFR3/BBUd/wQVHf8EFR3/BBUd/wQVHf8EFR3/BBUd/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/xkxP/8ZMT//GTE//xkxPf8ZMDz/GTA8/xgwO/8YMDv/GDA7/xgwOv8YLzr/GC86/xgsOv8YLDj/",
+    "width": 14,
+    "height": 6
   },
   {
     "name": "Gold Shield Key",
@@ -217,8 +217,8 @@ keys = [
   },
   {
     "name": "Orange Rectangle Key",
-    "icon": "JzBd/yMuWf8jLVj/Ii1W/yIrVP8gKlP/IClR/x8pT/8FEx7/BBMd/wQTHf8EEx3/BBMd/wQTHf8EEx3/BBMd/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/w==",
-    "width": 8,
+    "icon": "LTZq/ys0Zv8oMmL/JzBe/yQvWf8jLlj/Iy1W/yIsVP8iK1P/ICpR/yApUP8fKE3/HyhM/x0mSf8iKlP/BhQh/wUUIP8FEx//BRMe/wQTHf8EEx3/BBMd/wQTHf8EEx3/BBMd/wQTHf8EEx3/BBMd/wQTHf8OFin/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8MDB3/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8MDBz/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8AEBf/ABAX/wAQF/8MDBv/",
+    "width": 15,
     "height": 5
   },
   {
@@ -542,8 +542,6 @@ anchor =
     "height": 8
   }
 
-
-
 A1lib.identifyApp("appconfig.json");
 
 let reader = new Chatbox.default();
@@ -673,7 +671,6 @@ async function checkLine(line) {
         lastLines.pop();
     }
 
-    console.log(line)
     document.getElementById("debugChatStatus").innerText = lastLines.join("\n");
     if (line.includes("Welcome to Daemonheim") || line.includes("Dungeon Size")) {
     //if (line.includes("Daemonheim")) {
@@ -719,7 +716,6 @@ async function checkLine(line) {
       iconData = skills.find(s => s.name.toLowerCase() === skill);
 
       skillRoom = scanAdjacentSkillDoors(iconData)[0]
-      console.log(skillRoom)
         if(level >= iconData.max_level - 10  && level <= iconData.max_level){
           grid[skillRoom.room.row][skillRoom.room.col].crit = true
         }
@@ -731,14 +727,14 @@ async function checkLine(line) {
 
     tierMatch = line.match(/\(Tier (\d+)\)/i);
 
+
+    // [18:58:56] Your perfect juju dungeoneering potion and Daemonheim skill door unlock boost your attempt +6 to open this level 105 Prayer door without the level requirements.
+    // TODO
     if (tierMatch) {
       const tier = Number(tierMatch[1]);
-      console.log(tier);
 
       playerRoom = getPlayerRoom()
-      
-      console.log(tier)
-      console.log(grid[playerRoom.row][playerRoom.col].crit)
+
       if (tier > 8) {
           if (
               grid[playerRoom.row][playerRoom.col].crit !== false
@@ -750,11 +746,7 @@ async function checkLine(line) {
           grid[playerRoom.row][playerRoom.col].crit = false;
       }
 
-            console.log(tier)
-      console.log(grid[playerRoom.row][playerRoom.col].crit)
     }
-          
-
 }
 
 
@@ -840,6 +832,7 @@ function scanDungeonMap() {
 }
 
 setInterval(scanDungeonMap, 100);
+    const detectedKeys = new Set();
 
 function setRoomState(room) {
     
@@ -915,13 +908,17 @@ function setRoomState(room) {
     }
 
     // if the room is locked, check if it's a key door
+
+
     if (room.state === "locked") {
         for (const key of keys) {
             const matches = JSON.parse(alt1.bindFindSubImg(bind, key.icon, key.width, 0, 0, room.width, room.height));
-
+          
             // if we have the key, set the color to green, oterwise set to red
             if (matches.length > 0) {
+                detectedKeys.add(key.name);
                 room.state = "key"
+
                 if (myKeys.has(key.name.toLowerCase())) {
                     room.color = COLOR_KEY_YES
                 } else {
@@ -929,7 +926,12 @@ function setRoomState(room) {
                 }
             }
         }
+        document.getElementById(
+    "detectedKeys"
+).innerHTML =
+    [...detectedKeys].join("<br>");
     }
+
 }
 
 // MAYBE DELETE
@@ -1041,7 +1043,7 @@ function showStats() {
 
     let elapsed = "-";
     let projected = "-";
-let pace = "-";
+    let pace = "-";
 
   if (dungeonStartTime) {
       const seconds = Math.floor((Date.now() - dungeonStartTime) / 1000);
@@ -1305,7 +1307,7 @@ document.querySelectorAll('input[name="floorSize"]').forEach(radio => {
 // Brightness debug 
 
 let UNKNOWN_THRESHOLD = 37;
-let VISITED_THRESHOLD = 67;
+let VISITED_THRESHOLD = 62;
 
 const unknownSlider = document.getElementById("unknownSlider");
 const visitedSlider = document.getElementById("visitedSlider");
