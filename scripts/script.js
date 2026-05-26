@@ -675,7 +675,7 @@ async function checkLine(line) {
 
     console.log(line)
     document.getElementById("debugChatStatus").innerText = lastLines.join("\n");
-    if (line.includes("Welcome to Daemonheim")) {
+    if (line.includes("Welcome to Daemonheim") || line.includes("Dungeon Size")) {
     //if (line.includes("Daemonheim")) {
         inFloor = true
         dungeonStartTime = Date.now();
