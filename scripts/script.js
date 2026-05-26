@@ -592,6 +592,7 @@ window.setTimeout(() => {
             reader.pos.mainbox = reader.pos.boxes[0];
             showSelectedChat(reader.pos);
 
+            document.getElementById("debugChatStatus").innerText = "Chat: Found";
             chatInterval = setInterval(() => {
                 readChatbox();
             }, 200);
@@ -664,8 +665,16 @@ function sleep(ms) {
         setTimeout(resolve, ms)
     );
 }
-
+const lastLines = [];
 async function checkLine(line) {
+    lastLines.push(line);
+
+    if (lastLines.length > 6) {
+        lastLines.pop();
+    }
+
+    console.log(line)
+    document.getElementById("debugChatStatus").innerText = lastLines.join("\n");
     if (line.includes("Welcome to Daemonheim")) {
     //if (line.includes("Daemonheim")) {
         inFloor = true
