@@ -686,6 +686,7 @@ async function checkLine(line) {
         myKeys = new Set();
         inFloor = false
         grid = []
+        detectedKeys = new Set();
 
     }
 
@@ -832,7 +833,7 @@ function scanDungeonMap() {
 }
 
 setInterval(scanDungeonMap, 100);
-    const detectedKeys = new Set();
+detectedKeys = new Set();
 
 function setRoomState(room) {
     
