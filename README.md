@@ -23,7 +23,8 @@ This plugin can also mark likely critical paths through the dungeon. The critica
 The calculations are based on a maxed player account and currently only work if:
 - You are the red player icon on the dungeon map
 - You are standing inside the room containing the detected skill door or resource
-
+- If a room contains multiple doors requiring the same skill, the plugin currently cannot reliably determine which detected icon belongs to which specific door.
+  
 Too bad Jagex kind of nerfed the whole concept of critical paths with the Daemonheim Drift update by shifting XP rewards more towards full exploration instead of efficient pathing and boss rushing. Still, seeing which paths are likely important is still pretty useful for navigation, routing and general dungeon awareness.
 
 ![Crit Path Skill Door Example](./images/Crit%20path%20skill%20door%20example.png)![Crit Path Resource Example](./images/crit%20path%20resource%20example.png)
