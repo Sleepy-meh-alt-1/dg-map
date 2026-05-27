@@ -37,9 +37,19 @@ IDK, some stats you'll probably never look at because you're already 3 rooms ahe
 ### Custom colors
 Also yes, all overlay colors are customizable because apparently everyone has very strong opinions about what shade of red means "missing key".
 
-## Notes
+## Notes and Recommended Settings
 
 The in-game Dungeoneering map is transparent... which is great for aesthetics and terrible for screen reading. Since this plugin relies entirely on image detection, the map background can heavily affect accuracy depending on what is moving behind it. NPCs, particles, animations and random visual noise can all interfere with detection. 
+
+The plugin was built with these setting
+
+- Font size: 12
+- Local timestamps: ON
+- Interface scaling: 100%
+- Alt1 DirectX Capture mode
+- When entering a floor make sure the text: *- Welcome to Daemonheim -* is visable in the chatbox
+
+Other configurations may still work, but since the plugin relies heavily on screen reading and OCR, changing font rendering or scaling can affect detection accuracy.
 
 # Installation
 
