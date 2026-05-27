@@ -665,9 +665,11 @@ function sleep(ms) {
 }
 const lastLines = [];
 async function checkLine(line) {
+
+  console.log(line)
     lastLines.unshift(line);
 
-    if (lastLines.length > 6) {
+    if (lastLines.length > 11) {
         lastLines.pop();
     }
 
