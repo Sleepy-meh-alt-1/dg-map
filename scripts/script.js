@@ -688,8 +688,6 @@ async function checkLine(line) {
         myKeys = new Set();
         inFloor = false
         grid = []
-        detectedKeys = new Set();
-
     }
 
     const keyMatch = line.match(/Your party (found|used) a key: (\w+) (\w+) key/i);
@@ -835,7 +833,6 @@ function scanDungeonMap() {
 }
 
 setInterval(scanDungeonMap, 100);
-detectedKeys = new Set();
 
 function setRoomState(room) {
     
@@ -919,7 +916,6 @@ function setRoomState(room) {
           
             // if we have the key, set the color to green, oterwise set to red
             if (matches.length > 0) {
-                detectedKeys.add(key.name);
                 room.state = "key"
 
                 if (myKeys.has(key.name.toLowerCase())) {
@@ -929,10 +925,6 @@ function setRoomState(room) {
                 }
             }
         }
-        document.getElementById(
-    "detectedKeys"
-).innerHTML =
-    [...detectedKeys].join("<br>");
     }
 
 }
@@ -997,6 +989,8 @@ function showStats() {
   
   let unreachable = getUnreachableRooms()
 
+  let rpm = "-";
+
   for (let row = 0; row < GRID_HEIGHT; row++) {
     for (let col = 0; col < GRID_WIDTH; col++) {
       const room = grid[row][col];
@@ -1053,6 +1047,13 @@ function showStats() {
       const mins = Math.floor(seconds / 60);
       const secs = seconds % 60;
       elapsed =`${mins}:${secs.toString().padStart(2, "0")}`;
+      const minutes = seconds / 60;
+
+      if (minutes > 0) {
+          rpm =
+              (visited / minutes)
+              .toFixed(2);
+      }
   }
 
 
@@ -1077,10 +1078,6 @@ if (
             .toString()
             .padStart(2, "0")}`;
 
-    // =====================================
-    // PROJECTED TIME
-    // =====================================
-
     const projectedTotal =
         elapsedSeconds / (completion / 100);
 
@@ -1094,10 +1091,6 @@ if (
         `${projectedMins}:${projectedSecs
             .toString()
             .padStart(2, "0")}`;
-
-    // =====================================
-    // PACE
-    // =====================================
 
     const diff =
         TARGET_TIME_SECONDS -
@@ -1133,6 +1126,7 @@ if (
     document.getElementById("statCompletion").innerText = completion;
     document.getElementById("statTime").innerText = elapsed;
     document.getElementById("statProjected").innerText = projected;
+    document.getElementById("statRPM").innerText = rpm;
 
 }
 
