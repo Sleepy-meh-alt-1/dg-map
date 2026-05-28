@@ -552,6 +552,8 @@ let chatInterval = null;
 let dungeonStartTime = null;
 inFloor = false;
 
+let failedGoal = false; 
+
 RED = 0xffff0000
 GREEN = 0xff33aa33
 ORANGE = 0xffff8800
@@ -682,12 +684,16 @@ async function checkLine(line) {
         myKeys = new Set();
         await sleep(1000)
         buildGrid();
+        failedGoal = false;
+        alt1.clearTooltip();
     }
 
     if(line.includes("You leave the party.")){
         myKeys = new Set();
         inFloor = false
         grid = []
+        failedGoal = false;
+        alt1.clearTooltip();
     }
 
     const keyMatch = line.match(/Your party (found|used) a key: (\w+) (\w+) key/i);
@@ -810,7 +816,10 @@ function scanDungeonMap() {
   for (let row = 0; row < GRID_HEIGHT; row++) {
     for (let col = 0; col < GRID_WIDTH; col++) {
       room = grid[row][col]
-      setRoomState(grid[row][col]);
+      if(room.visited){
+        setRoomState(grid[row][col]);
+
+      }
 
       //DEBUG 
       //alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 600, 1)
@@ -1036,7 +1045,10 @@ function showStats() {
 
   completion = total > 0 ? Math.round((visited / total) * 100): 0;
 
-  const TARGET_TIME_SECONDS = 15 * 60; // 15 mins
+  goalMinutes = Number(document.getElementById("goalMinutes").value);
+  goalSeconds = Number(document.getElementById("goalSeconds").value);
+
+  TARGET_TIME_SECONDS = goalMinutes * 60 + goalSeconds;
 
     let elapsed = "-";
     let projected = "-";
@@ -1050,62 +1062,32 @@ function showStats() {
       const minutes = seconds / 60;
 
       if (minutes > 0) {
-          rpm =
-              (visited / minutes)
-              .toFixed(2);
+        rpm = (visited / minutes).toFixed(2);
       }
   }
 
 
-if (
-    dungeonStartTime &&
-    completion > 0
-) {
+if (dungeonStartTime && completion > 0) {
 
-    const elapsedSeconds =
-        Math.floor(
-            (Date.now() - dungeonStartTime) / 1000
-        );
+    const elapsedSeconds = Math.floor((Date.now() - dungeonStartTime) / 1000);
 
-    const mins =
-        Math.floor(elapsedSeconds / 60);
+    const mins = Math.floor(elapsedSeconds / 60);
 
-    const secs =
-        elapsedSeconds % 60;
+    const secs = elapsedSeconds % 60;
 
-    elapsed =
-        `${mins}:${secs
-            .toString()
-            .padStart(2, "0")}`;
+    elapsed = `${mins}:${secs.toString().padStart(2, "0")}`;
 
-    const projectedTotal =
-        elapsedSeconds / (completion / 100);
+    const projectedTotal = elapsedSeconds / (completion / 100);
 
-    const projectedMins =
-        Math.floor(projectedTotal / 60);
+    const projectedMins = Math.floor(projectedTotal / 60);
 
-    const projectedSecs =
-        Math.floor(projectedTotal % 60);
+    const projectedSecs = Math.floor(projectedTotal % 60);
 
-    projected =
-        `${projectedMins}:${projectedSecs
-            .toString()
-            .padStart(2, "0")}`;
+    projected = `${projectedMins}:${projectedSecs.toString().padStart(2, "0")}`;
 
-    const diff =
-        TARGET_TIME_SECONDS -
-        projectedTotal;
-
-    if (diff > 120) {
-        pace = "Ahead";
-    }
-
-    else if (diff > -120) {
-        pace = "On Pace";
-    }
-
-    else {
-        pace = "Behind";
+    if (!failedGoal && elapsedSeconds > TARGET_TIME_SECONDS && TARGET_TIME_SECONDS > 0) {
+        failedGoal = true;
+        alt1.setTooltip("Too slow");
     }
 }
 
@@ -1352,3 +1334,4 @@ document.getElementById("colorCritFalse").addEventListener("input", e => COLOR_C
 
 document.getElementById("showKeyOverlay").addEventListener("change", e => SHOW_KEY_OVERLAY = e.target.checked);
 document.getElementById("showCritOverlay").addEventListener("change", e => SHOW_CRIT_OVERLAY = e.target.checked);
+
