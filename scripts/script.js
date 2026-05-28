@@ -816,10 +816,7 @@ function scanDungeonMap() {
   for (let row = 0; row < GRID_HEIGHT; row++) {
     for (let col = 0; col < GRID_WIDTH; col++) {
       room = grid[row][col]
-      if(room.visited){
-        setRoomState(grid[row][col]);
-
-      }
+      setRoomState(grid[row][col]);
 
       //DEBUG 
       //alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 600, 1)
