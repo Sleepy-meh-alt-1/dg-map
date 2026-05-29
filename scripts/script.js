@@ -124,7 +124,7 @@ function sleep(ms) {
 const lastLines = [];
 async function checkLine(line) {
 
-  console.log(line)
+  // console.log(line)
   lastLines.unshift(line);
 
   if (lastLines.length > 11) {
@@ -132,7 +132,7 @@ async function checkLine(line) {
   }
 
   document.getElementById("debugChatStatus").innerText = lastLines.join("\n");
-  if (line.includes("Welcome to Daemonheim") || line.includes("Dungeon Size")) {
+  if (line.includes("Welcome to Daemonheim") || line.includes("Dungeon Size") || (!inFloor && line.includes('This ties you to your allies'))) {
     inFloor = true
     dungeonStartTime = Date.now();
 
@@ -141,6 +141,7 @@ async function checkLine(line) {
     buildGrid();
     failedGoal = false;
     alt1.clearTooltip();
+    return;
   }
 
   if (line.includes("You leave the party.")) {
@@ -149,6 +150,7 @@ async function checkLine(line) {
     grid = []
     failedGoal = false;
     alt1.clearTooltip();
+    return;
   }
 
   const keyMatch = line.match(/Your party (found|used) a key: (\w+) (\w+) key/i);
@@ -160,13 +162,13 @@ async function checkLine(line) {
     const keyName = `${color} ${shape} key`;
 
     console.log(action, keyName)
-    if (action === "found") {
-      myKeys.add(keyName);
-    }
 
-    if (action === "used") {
+    if (action === "found")
+      myKeys.add(keyName);
+    else if (action === "used")
       myKeys.delete(keyName);
-    }
+
+    return;
   }
 
   const critMatch = line.match(/level (\d+) (\w+)/i);
@@ -176,12 +178,15 @@ async function checkLine(line) {
     const iconData = SKILL_ICONS.find(s => s.name.toLowerCase() === skill);
 
     const skillRoom = scanAdjacentSkillDoors(iconData)[0]
-    if (level >= iconData.max_level - 10 && level <= iconData.max_level) {
-      grid[skillRoom.room.row][skillRoom.room.col].crit = true
+    if (skillRoom) {
+      if (level >= iconData.max_level - 10 && level <= iconData.max_level) {
+        grid[skillRoom.room.row][skillRoom.room.col].crit = true
+      }
+      else {
+        grid[skillRoom.room.row][skillRoom.room.col].crit = false
+      }
     }
-    else {
-      grid[skillRoom.room.row][skillRoom.room.col].crit = false
-    }
+    return;
   }
 
 
@@ -191,16 +196,19 @@ async function checkLine(line) {
   if (tierMatch) {
     const tier = Number(tierMatch[1]);
 
-    const playerRoom = getPlayerRoom()
+    const playerRoom = scanPlayerRoom()
 
-    if (tier > 8) {
-      if (grid[playerRoom.row][playerRoom.col].crit !== false) {
-        grid[playerRoom.row][playerRoom.col].crit = true;
+    if (playerRoom) {
+      if (tier > 8) {
+        if (grid[playerRoom.row][playerRoom.col].crit !== false) {
+          grid[playerRoom.row][playerRoom.col].crit = true;
+        }
+      }
+      else {
+        grid[playerRoom.row][playerRoom.col].crit = false;
       }
     }
-    else {
-      grid[playerRoom.row][playerRoom.col].crit = false;
-    }
+    return;
   }
 }
 
@@ -248,31 +256,33 @@ function buildGrid() {
 
     grid.push(rowArray);
   }
+  scanDungeonMapFull();
 }
 
+let knownRooms, indexedRooms, unknownAdjacents;
 
-function scanDungeonMap() {
+function scanDungeonMapFull() {
   const start = performance.now();
+  console.log('scanDungeonMapFull', grid);
+
 
   if (!grid || grid.length === 0) {
     return;
   }
 
+  indexedRooms = {};
+  knownRooms = new Set();
+  unknownAdjacents = new Set();
+
   for (let row = 0; row < GRID_HEIGHT; row++) {
     for (let col = 0; col < GRID_WIDTH; col++) {
-      const room = grid[row][col]
+      const room = grid[row][col];
       setRoomState(room);
+      indexedRooms[room.id] = room;
+
 
       //DEBUG
-      //alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 600, 1)
-
-      if (room.state == "key" && SHOW_KEY_OVERLAY) {
-        alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 600, 1)
-      }
-
-      if (SHOW_CRIT_OVERLAY && room.crit != null) {
-        alt1.overLayRect(room.crit ? COLOR_CRIT_TRUE : COLOR_CRIT_FALSE, room.x, room.y, room.width, room.height, 600, 1);
-      }
+      alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 3000, 1)
     }
   }
 
@@ -281,18 +291,57 @@ function scanDungeonMap() {
   const end = performance.now();
 
   document.getElementById("statScanTime").innerText = Math.round(end - start);
+
+  setTimeout(scanDungeonMapPartial, 1000);
 }
 
-setInterval(scanDungeonMap, 100);
+function scanDungeonMapPartial() {
+  const start = performance.now();
+  console.log('scanDungeonMapPartial');
+
+  if (!knownRooms || knownRooms.size === 0)
+    return setTimeout(scanDungeonMapFull, 1000);
+
+  for (let roomId of knownRooms) {
+    const room = indexedRooms[roomId];
+
+    if (room.state !== 'visited')
+      setRoomState(room);
+
+    //DEBUG
+    // alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 2000, 1)
+
+    if (SHOW_KEY_OVERLAY && room.state == 'key') {
+      alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 2000, 1)
+    }
+
+    if (SHOW_CRIT_OVERLAY && room.crit != null) {
+      alt1.overLayRect(room.crit ? COLOR_CRIT_TRUE : COLOR_CRIT_FALSE, room.x, room.y, room.width, room.height, 2000, 1);
+    }
+  }
+
+  for (let roomId of unknownAdjacents) {
+    const room = indexedRooms[roomId];
+    setRoomState(room);
+
+    alt1.overLayRect(0xffff00ff, room.x, room.y, room.width, room.height, 600, 1)
+
+    if (room.state !== "unknown") {
+      knownRooms.add(room.id);
+    }
+  }
+
+  showStats()
+
+  const end = performance.now();
+
+  document.getElementById("statScanTime").innerText = Math.round(end - start);
+
+  setTimeout(scanDungeonMapPartial, 50);
+}
 
 function setRoomState(room) {
-
-  const roomWithCorridors = A1lib.capture(room.x - 2, room.y - 2, room.width + 2 * 2, room.height + 2 * 2);
-
-  room.up = scanEdge(roomWithCorridors, "top");
-  room.right = scanEdge(roomWithCorridors, "right");
-  room.down = scanEdge(roomWithCorridors, "bottom");
-  room.left = scanEdge(roomWithCorridors, "left");
+  room.id = `${room.row}:${room.col}`;
 
   const img = A1lib.capture(room.x, room.y, room.width, room.height);
   const bind = alt1.bindRegion(room.x, room.y, room.width, room.height);
@@ -342,19 +391,19 @@ function setRoomState(room) {
   // If it's really bright, set to visited
   if (avgBrightness > VISITED_THRESHOLD) {
     room.color = GREEN
-    room.state = "visisted"
+    room.state = "visited"
 
     // Check if the player is here, do I need this? Would also need to update the player icon to match diff colors
-    const matches = JSON.parse(alt1.bindFindSubImg(bind, PLAYER_ICON.icon, PLAYER_ICON.width, 0, 0, room.width, room.height));
+    // const matches = JSON.parse(alt1.bindFindSubImg(bind, PLAYER_ICON.icon, PLAYER_ICON.width, 0, 0, room.width, room.height));
 
-    if (matches.length > 0) {
-      for (let row = 0; row < GRID_HEIGHT; row++) {
-        for (let col = 0; col < GRID_WIDTH; col++) {
-          grid[row][col].player = false;
-        }
-      }
-      room.player = true
-    }
+    // if (matches.length > 0) {
+    //   for (let row = 0; row < GRID_HEIGHT; row++) {
+    //     for (let col = 0; col < GRID_WIDTH; col++) {
+    //       grid[row][col].player = false;
+    //     }
+    //   }
+    //   room.player = true
+    // }
   }
 
   // if the room is locked, check if it's a key door
@@ -378,6 +427,83 @@ function setRoomState(room) {
     }
   }
 
+
+  if (room.state === "unknown") {
+    knownRooms.delete(room.id);
+  }
+  else {
+    knownRooms.add(room.id);
+    unknownAdjacents.delete(room.id);
+  }
+
+  // alt1.overLayRect(0xffff0000, room.x - 2, room.y - 2, room.width + 2 * 2, room.height + 2 * 2, 600, 1)
+  if (room.state === "visited") {
+
+    roomWithCorridors = A1lib.capture(room.x - 2, room.y - 2, room.width + 2 * 2, room.height + 2 * 2);
+    room.up = scanEdge(roomWithCorridors, "top");
+    room.right = scanEdge(roomWithCorridors, "right");
+    room.down = scanEdge(roomWithCorridors, "bottom");
+    room.left = scanEdge(roomWithCorridors, "left");
+
+
+    if (room.up) alt1.overLayRect(0xffff00ff, room.x + Math.round(room.width / 2) - 2, room.y - 4, 4, 4, 600, 2)
+    if (room.right) alt1.overLayRect(0xffff00ff, room.x + room.width + 2, room.y + Math.round(room.height / 2) - 2, 4, 4, 600, 2)
+    if (room.down) alt1.overLayRect(0xffff00ff, room.x + Math.round(room.width / 2) - 2, room.y + room.height + 2, 4, 4, 600, 2)
+    if (room.left) alt1.overLayRect(0xffff00ff, room.x - 4, room.y + Math.round(room.height / 2) - 2, 4, 4, 600, 2)
+
+    if (room.up) {
+      const adjacentRoom = indexedRooms[`${room.row - 1}:${room.col}`];
+      if (adjacentRoom?.state === "unknown") {
+        unknownAdjacents.add(adjacentRoom.id);
+        console.log('Found adjacent of', room.id, 'up at', adjacentRoom.id)
+      }
+    }
+
+    if (room.right) {
+      const adjacentRoom = indexedRooms[`${room.row}:${room.col + 1}`];
+      if (adjacentRoom?.state === "unknown") {
+        unknownAdjacents.add(adjacentRoom.id);
+        console.log('Found adjacent of', room.id, 'right at', adjacentRoom.id)
+      }
+    }
+
+    if (room.down) {
+      const adjacentRoom = indexedRooms[`${room.row + 1}:${room.col}`];
+      if (adjacentRoom?.state === "unknown") {
+        unknownAdjacents.add(adjacentRoom.id);
+        console.log('Found adjacent of', room.id, 'down at', adjacentRoom.id)
+      }
+    }
+
+    if (room.left) {
+      const adjacentRoom = indexedRooms[`${room.row}:${room.col - 1}`];
+      if (adjacentRoom?.state === "unknown") {
+        unknownAdjacents.add(adjacentRoom.id);
+        console.log('Found adjacent of', room.id, 'left at', adjacentRoom.id)
+      }
+    }
+  }
+}
+
+function scanPlayerRoom() {
+  if (!knownRooms || knownRooms.size === 0)
+    return null;
+
+  const start = performance.now();
+  let playerRoom;
+  for (const roomId of [...knownRooms].reverse()) {
+    const room = indexedRooms[roomId];
+    const bind = alt1.bindRegion(room.x, room.y, room.width, room.height);
+    const matches = JSON.parse(alt1.bindFindSubImg(bind, PLAYER_ICON.icon, PLAYER_ICON.width, 0, 0, room.width, room.height));
+    if (matches.length > 0) {
+      playerRoom = room;
+      break;
+    }
+  }
+  const end = performance.now();
+
+  console.log('Player', playerRoom ? `found at ${playerRoom.id}` : 'not found', 'in', Math.round(end - start), 'ms');
+  return playerRoom;
 }
 
 // MAYBE DELETE
@@ -436,8 +562,6 @@ function showStats() {
   let deadEnds = 0;
   let branches = 0;
 
-  let playerRoom = null;
-
   let unreachable = getUnreachableRooms()
 
   let rpm = "-";
@@ -473,11 +597,6 @@ function showStats() {
         if (exits >= 3) {
           branches++;
         }
-      }
-
-      // player room
-      if (room.player) {
-        playerRoom = room;
       }
     }
   }
@@ -540,12 +659,6 @@ function showStats() {
 
   document.getElementById("statDeadEnds").innerText = deadEnds;
   document.getElementById("statBranches").innerText = branches;
-
-  document.getElementById("statPlayer").innerText =
-    playerRoom
-      ? `${playerRoom.row + 1}, ${playerRoom.col + 1}`
-      : "-";
-
 
   document.getElementById("statCompletion").innerText = completion;
   document.getElementById("statTime").innerText = elapsed;
@@ -647,25 +760,14 @@ function getUnreachableRooms() {
   return unreachable;
 }
 
-function getPlayerRoom() {
-  for (let row = 0; row < GRID_HEIGHT; row++) {
-    for (let col = 0; col < GRID_WIDTH; col++) {
-      const room = grid[row][col];
-
-      if (room.player) {
-        return room;
-      }
-    }
-  }
-  return null;
-}
 
 function scanAdjacentSkillDoors(skill) {
 
 
   console.log(skill)
-  const playerRoom = getPlayerRoom();
+  const playerRoom = scanPlayerRoom();
   console.log(playerRoom)
+  // alt1.overLayRect(0xff0000ff, playerRoom.x, playerRoom.y, playerRoom.width, playerRoom.height, 1000, 2);
 
   if (!playerRoom) {
     return [];

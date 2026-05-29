@@ -77,7 +77,10 @@
 <body class="nis">
 
   <div id="stats" class="panel">
-    <div class="panel-title">DG STATS</div>
+    <div class="panel-title" style="display: flex; justify-content: space-between;">
+      DG STATS
+      <span>Scan Time: <span id="statScanTime">-</span> ms</span>
+    </div>
     <hr>
 
     <div>Visited: <span id="statVisited">-</span></div>
@@ -88,9 +91,6 @@
 
     <div>Dead Ends: <span id="statDeadEnds">-</span></div>
     <div>Branches: <span id="statBranches">-</span></div>
-    <hr>
-
-    <div>Player: <span id="statPlayer">-</span></div>
     <hr>
 
     <div>Completion: <span id="statCompletion">-</span>%</div>
@@ -135,7 +135,6 @@
   <div class="panel controls">
     <div class="panel-title">DEBUG</div>
     <div id="debugChatStatus" style="white-space: pre-line;">Chatbox Searching...</div>
-    <div>Scan Time: <span id="statScanTime">-</span> ms</div>
     <label> Unknown Threshold <span id="unknownValue">37</span></label>
     <input type="range" id="unknownSlider" min="0" max="50" value="37">
 
