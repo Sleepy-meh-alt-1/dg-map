@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,88 +13,92 @@
   <script src="https://www.unpkg.com/alt1/dist/chatbox/index.js"></script>
 
   <style>
-
     body {
-      display:flex;
-      flex-direction:column;
-      gap:16px;
-      padding:12px;
-      font-family:monospace;
+      display: flex;
+      flex-direction: column;
+      gap: 16px;
+      padding: 12px;
+      font-family: monospace;
     }
+
     body.nis {
       overflow-y: scroll;
     }
 
     .panel {
-      background:#111;
-      color:white;
-      border:2px solid #444;
-      padding:12px;
-      width:100%;
-      box-sizing:border-box;
+      background: #111;
+      color: white;
+      border: 2px solid #444;
+      padding: 12px;
+      width: 100%;
+      box-sizing: border-box;
     }
+
     .panel .panel-content {
-      display:none;
+      display: none;
     }
+
     .panel.open .panel-content {
-      display:block;
+      display: block;
     }
 
     .panel-title {
-      position:relative;
-      font-weight:bold;
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      padding-right:20px;
+      position: relative;
+      font-weight: bold;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding-right: 20px;
     }
-    .panel-toggle {
-      position:absolute;
-      inset:0;
-      text-align:right;
-      font-weight:bold;
-      padding:0 5px 0 0;
 
-      background:none;
-      border:none;
-      color:white;
-      font-size:16px;
-      cursor:pointer;
+    .panel-toggle {
+      position: absolute;
+      inset: 0;
+      text-align: right;
+      font-weight: bold;
+      padding: 0 5px 0 0;
+
+      background: none;
+      border: none;
+      color: white;
+      font-size: 16px;
+      cursor: pointer;
     }
+
     .panel-content {
-      margin-top:12px;
-      display:flex;
-      flex-direction:column;
-      gap:8px;
+      margin-top: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
     }
+
     .panel-content label {
-      display:flex;
-      justify-content:space-between;
-      align-items:center;
-      gap:10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
     }
 
     .radio-group {
-      display:flex;
-      gap:12px;
+      display: flex;
+      gap: 12px;
     }
 
     .radio-group label {
-      display:flex;
-      align-items:center;
-      gap:4px;
+      display: flex;
+      align-items: center;
+      gap: 4px;
     }
 
     input[type="range"] {
-      width:100%;
+      width: 100%;
     }
 
     hr {
-      border:0;
-      border-top:1px solid #333;
-      margin:8px 0;
+      border: 0;
+      border-top: 1px solid #333;
+      margin: 8px 0;
     }
-
   </style>
 
 </head>
@@ -179,4 +184,5 @@
   <script src="scripts/images.js"></script>
   <script src="scripts/script.js"></script>
 </body>
+
 </html>
