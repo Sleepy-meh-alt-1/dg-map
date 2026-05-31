@@ -878,3 +878,29 @@ document.getElementById("colorCritFalse").addEventListener("input", e => COLOR_C
 
 document.getElementById("showKeyOverlay").addEventListener("change", e => SHOW_KEY_OVERLAY = e.target.checked);
 document.getElementById("showCritOverlay").addEventListener("change", e => SHOW_CRIT_OVERLAY = e.target.checked);
+
+
+document.querySelectorAll(".panel .panel-toggle").forEach(button => {
+  const panel = button.closest(".panel");
+  const key = panel.dataset.panelKey && `panel_${panel.dataset.panelKey}_collapsed`;
+  const open = key ? localStorage.getItem(key) !== "true" : true;
+
+  const togglePanel = (isOpen) => {
+    if (isOpen) {
+      panel.classList.add("open");
+      button.innerText = "–";
+      if (key) localStorage.removeItem(key);
+    }
+    else {
+      panel.classList.remove("open");
+      button.innerText = "+";
+      if (key) localStorage.setItem(key, "true");
+    }
+  };
+
+  togglePanel(open);
+
+  button.addEventListener("click", () => {
+    togglePanel(!panel.classList.contains("open"));
+  });
+});
