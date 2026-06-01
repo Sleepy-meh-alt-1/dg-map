@@ -731,34 +731,32 @@ function setRoomState(room) {
     // debugLockedRoomCaptures.add(
     //   A1lib.encodeImageString(img, 0, 0, img.width, img.height)
     // )
-    for (const key of KEY_ICONS) {
+    for (const key of KEY_HL_ICONS) {
       const matches = JSON.parse(alt1.bindFindSubImg(bind, key.icon, key.width, 0, 0, room.width, room.height));
       const match = matches[0];
 
-      // if we have the key, set the color to green, oterwise set to red
       if (match) {
         room.state = "key"
-        room.color = myKeys.has(key.name.toLowerCase()) ?
-          COLOR_KEY_YES :
-          COLOR_KEY_NO
 
+        myKeys.add(key.name.toLowerCase());
+        room.color = COLOR_KEY_YES
         break;
       }
     }
 
     // If we still haven't found a key, check for highlighted keys
     if (room.state !== "key") {
-      for (const key of KEY_HL_ICONS) {
-        if (!key.icon) continue;
-
+      for (const key of KEY_ICONS) {
         const matches = JSON.parse(alt1.bindFindSubImg(bind, key.icon, key.width, 0, 0, room.width, room.height));
         const match = matches[0];
 
+        // if we have the key, set the color to green, oterwise set to red
         if (match) {
           room.state = "key"
+          room.color = myKeys.has(key.name.toLowerCase()) ?
+            COLOR_KEY_YES :
+            COLOR_KEY_NO
 
-          myKeys.add(key.name.toLowerCase());
-          room.color = COLOR_KEY_YES
           break;
         }
       }
