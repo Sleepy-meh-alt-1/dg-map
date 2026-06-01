@@ -5,8 +5,6 @@ const appColor = A1lib.mixColor(255, 199, 0);
 const timestampRegex = /\[\d{2}:\d{2}:\d{2}\]/g;
 
 let chatInterval = null;
-let scanPlayerRoomTimeout = null;
-let buildGridTimeout = null;
 
 const timeouts = {
   scanInterface: null,
@@ -805,7 +803,7 @@ function scanPlayerRoom() {
     ready = false;
   }
 
-  clearTimeout(scanPlayerRoomTimeout);
+  clearTimeout(timeouts.scanPlayerRoom);
   if (!ready) {
     if (SHOW_PLAYER_HIGHLIGHT)
       timeouts.scanPlayerRoom = setTimeout(scanPlayerRoom, 500);
