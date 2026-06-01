@@ -133,7 +133,7 @@ window.setTimeout(() => {
   }, 1000);
 
   scanInterface();
-  scanAnchor();
+  // scanAnchor();
 
 }, 0);
 
@@ -419,17 +419,17 @@ function stopFloor() {
   alt1.clearTooltip();
 }
 
-function scanAnchor() {
-  clearTimeout(timeouts.scanAnchor);
-  const location = findAnchor();
-  if (!location) {
-    timeouts.scanAnchor = setTimeout(scanAnchor, 600);
-    console.log('Anchor not found, retrying scanAnchor');
-    return;
-  }
+// function scanAnchor() {
+//   clearTimeout(timeouts.scanAnchor);
+//   const location = findAnchor();
+//   if (!location) {
+//     timeouts.scanAnchor = setTimeout(scanAnchor, 600);
+//     console.log('Anchor not found, retrying scanAnchor');
+//     return;
+//   }
 
-  startFloor();
-}
+//   startFloor();
+// }
 
 function findAnchor() {
   const rsBind = alt1.bindRegion(0, 0, alt1.rsWidth, alt1.rsHeight);
@@ -609,27 +609,27 @@ function scanDungeonMapPartial() {
 window.grid = grid;
 window.indexedRooms = indexedRooms;
 
-const debugLockedRoomCaptures = new Set();
-function exportDebugLockedRoomCaptures() {
-  const imageStrings = [];
-  for (let capture of debugLockedRoomCaptures) {
-    // const img = A1lib.decodeImageString(capture);
-    const canvas = document.createElement('canvas');
-    canvas.width = 29;
-    canvas.height = 29;
-    const ctx = canvas.getContext('2d');
-    const imageData = ctx.createImageData(29, 29);
-    A1lib.decodeImageString(capture, imageData, 0, 0, 29, 29);
-    ctx.putImageData(imageData, 0, 0);
-    imageStrings.push(canvas.toDataURL());
-  }
-  const html = '<html><body>' +
-    imageStrings.map(src => `<img src="${src}" />`).join('') +
-    '</body></html>'
+// const debugLockedRoomCaptures = new Set();
+// function exportDebugLockedRoomCaptures() {
+//   const imageStrings = [];
+//   for (let capture of debugLockedRoomCaptures) {
+//     // const img = A1lib.decodeImageString(capture);
+//     const canvas = document.createElement('canvas');
+//     canvas.width = 29;
+//     canvas.height = 29;
+//     const ctx = canvas.getContext('2d');
+//     const imageData = ctx.createImageData(29, 29);
+//     A1lib.decodeImageString(capture, imageData, 0, 0, 29, 29);
+//     ctx.putImageData(imageData, 0, 0);
+//     imageStrings.push(canvas.toDataURL());
+//   }
+//   const html = '<html><body>' +
+//     imageStrings.map(src => `<img src="${src}" />`).join('') +
+//     '</body></html>'
 
-  return html;
-}
-window.exportDebugLockedRoomCaptures = exportDebugLockedRoomCaptures;
+//   return html;
+// }
+// window.exportDebugLockedRoomCaptures = exportDebugLockedRoomCaptures;
 
 function setRoomState(room) {
   room.id = `${room.row}:${room.col}`;
@@ -700,9 +700,9 @@ function setRoomState(room) {
   // if the room is locked, check if it's a key door
   if (room.state === "locked") {
 
-    debugLockedRoomCaptures.add(
-      A1lib.encodeImageString(img, 0, 0, img.width, img.height)
-    )
+    // debugLockedRoomCaptures.add(
+    //   A1lib.encodeImageString(img, 0, 0, img.width, img.height)
+    // )
     for (const key of KEY_ICONS) {
       const matches = JSON.parse(alt1.bindFindSubImg(bind, key.icon, key.width, 0, 0, room.width, room.height));
       const match = matches[0];
