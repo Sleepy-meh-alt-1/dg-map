@@ -1,16 +1,54 @@
 const ANCHOR_ICON = {
   name: "Anchor",
-  icon: "KC1r/ysyc/8rMnP/KjFt/yoxbf8oLWv/XYyz/2+ry/9djLP/KC1r/ygta/8qMW3/KzJz/ysyc/8oLWv/Jitk/yUrcf8oLWv/Jitk/yUoW/9DYov/ZqHE/1yBq/9mocT/Q2KL/yUoW/8mK2T/KC1r/yUrcf8mK2T/JShb/yUqbP8mK2T/IiRU/0Nii/9fl7v/SWmQ/zw/ZP9JaZD/X5e7/0Nii/8iJFT/Jitk/ygta/8lKFv/ISNZ/yImZf8iJFT/PlyG/1WQt/9DYov/LzJd/y8yXf8vMl3/Q2KL/1WQt/8+XIb/IiRU/yImZf8hI1n/IiRU/yEjWf84VoT/Toiw/z5chv8vMl3/JShb/yEjWf8qLVr/LzJd/z5chv9OiLD/OFaE/yEjWf8iJFT/HCFL/yYrZP9Hgqv/PlyG/y8yXf8lKFv/ISNZ/yEjWf8hI1n/JShb/yotWv8+XIb/R4Kr/yUqbP8cIUv/HCFL/y0tYv8tLWL/LS1i/yEjWf8hI1n/ISNZ/yEjWf8hI1n/ISNZ/yEjWf8tLWL/LS1i/y0tYv8eH0n/HBtD/xwbQ/8cG0P/HBtD/xwbQ/8cG0P/HBtD/xwbQ/8cG0P/HBtD/xwbQ/8cG0P/HBtD/xwbQ/8cG0P/",
+  icon: "ICVs/yAlbP8cIWX/HCFl/xwhZf8cIWX/HCFl/xwhZf8cIWX/HCFl/xwhZf8cIWX/HCFl/yAlbP8oMXv/KDF7/ygxe/8jKWv/Iylr/ycudP8oMXv/KDF7/ygxe/8oMXv/KDF7/ycudP8jKWv/Iylr/yw0gf8tOIT/LTiD/y45i/+Rzuj/YYWv/ys1ff8tOIT/LjmL/y45i/8uOYv/LTiE/ys1ff9hha//kc/o/y46i/8tOIT/KzV9/zNAjv9ihrb/kc/o/1yCrP8nLnT/KzV9/y04hP8rNX3/Jy50/1yCrP+Rz+j/Yoa2/zNAjv8rNX3/KDF7/y04hP85Qof/Yoa2/4jF4P9afab/JS1t/ycudP8lLW3/Wn2m/4jF4P9ihrb/OUKH/y45i/8oMXv/Jy50/yUzg/8rNX3/OUB9/1yCrP+Bvdr/VXih/yUpWv9VeKH/gb3a/1yCrP85QH3/KzV9/yUzg/8nLnT/JS1t/ygxe/8oMXv/MDd2/zA3dv9VeKH/ebXT/1+YvP95tdP/VXih/zA3dv8wN3b/KDF7/ygxe/8lLW3/Iylr/ycudP8nLnT/JS1t/yUtbf8jKWv/XY20/3CtzP9djbT/Iylr/yMpa/8lLW3/Jy50/ycudP8jKWv/ISdk/yAncv8jKWv/ISdk/yAjW/9BYoz/ZqLF/1yCrP9mosX/QWKM/yAjW/8hJ2T/Iylr/yAncv8hJ2T/ICNb/yAlbP8hJ2T/HB9T/0FijP9fmLz/R2mR/zk9ZP9HaZH/X5i8/0FijP8cH1P/ISdk/yMpa/8gI1v/Gx5Y/xwhZf8cH1P/PFyH/1SRuP9BYoz/Ky5d/ysuXf8rLl3/QWKM/1SRuP88XIf/HB9T/xwhZf8bHlj/HB9T/xseWP81VYX/TYmx/zxch/8rLl3/ICNb/xseWP8lKVr/Ky5d/zxch/9NibH/NVWF/xseWP8cH1P/FRtK/yEnZP9Fg6z/PFyH/ysuXf8gI1v/Gx5Y/xseWP8bHlj/ICNb/yUpWv88XIf/RYOs/yAlbP8VG0r/FRtK/ykpYv8pKWL/KSli/xseWP8bHlj/Gx5Y/xseWP8bHlj/Gx5Y/xseWP8pKWL/KSli/ykpYv8YGUf/FRRB/xUUQf8VFEH/FRRB/xUUQf8VFEH/FRRB/xUUQf8VFEH/FRRB/xUUQf8VFEH/FRRB/xUUQf8VFEH/",
   width: 15,
-  height: 8
+  height: 15
 }
 
-const PLAYER_ICON = {
-  name: "Player Icon",
-  icon: "AB1v/wAih/8AIof/ACKH/wAih/8AIof/AB1v/wAdb/8AIof/ACKH/wAih/8AIof/ACKH/wAdb/8UFBT/AC6u/wAih/8AIof/ACKH/wAurv8UFBT/FBQU/wAdb/8ALq7/ACKH/wAurv8AHW//FBQU/w==",
-  width: 7,
-  height: 4
+const DG_ICON = {
+  icon: "KjA2/ykxNf8kKjb/GiI4/xQfLf8YIy7/FChE/xMth/8GJ5r/BQp3/xAUYP8cIUz/Jyw3/yoyNv8kLDP/FiRY/wZHrf8UZ8j/MpLX/zBuof8jXNv/A1HZ/0Ws8f9No+3/GIfr/wNt2P8NH37/ISky/xkhMf8eT6v/MnPj/0ST7P9fmcL/MmWT/wx02/8ig93/nuH6/1rI9/8Bm/L/AWvm/wJW1v8LK5X/R19r/0OEuv80YYn/PGuN/0+PsP8zZqL/H1rM/z2H4/9ttvH/AyO9/wElvv8BauX/B4fQ/wYtnP8cZZn/AQ0V/wAAAP8KDA3/LUVX/0WDrP8hS7//XJbt/zan8P8CJcf/AE/Z/wKU3/8iStz/DBNS/w1Nbf8AAQP/ARUh/xIoNf8ZHyP/LmWU/wk0mf85juX/CI7v/wFi4P8BauH/C0LC/yNyx/8eKDn/G01n/wYjNP8NWIb/LW2R/w4XHP8lN1H/BhpL/wADf/8BcuL/AWLd/woonv8bW4T/EV/D/xIaMv8ZR17/NWiL/1GCnf8uaYT/GlNu/xUbIP8fLjr/GUJl/wAZdv8XUJ3/JW2p/02Nuf8Ta5v/EClL/xchJ/80ZYD/IE5x/wk/af8JN1P/N1Nm/xkfIv8cIiv/IjVF/yVKYv9DeqH/Iomu/xRjsP8SQ4T/Iiks/xMoNv8wVnP/CjpY/zRykv95psT/UIif/xglLv8ZHiH/ICcq/wofOv9Hh6//AnTg/wYwp/8jKi7/HiQo/xI2S/85d5b/ma67/26VqP8bW33/CVR+/yBPb/8fLjj/CSEy/yx0sP8HcOL/DjGm/yMqLv8jKi7/ICcq/xIuRP9Kfpv/F0Fd/wY8W/8McKv/Vn2U/xhEYv8DFSf/H4jN/wZs2P8QIW3/Iyou/yMqLv8jKi7/HyUq/xMhK/8gTGL/OWmE/199kf8ySV7/BhAc/wQyU/8cibn/ECJk/x4lNP8jKi7/Iyou/yMqLv8jKi7/Iyou/xshJf8SLDf/GExj/yVMY/8XUmz/F194/xEZIP8gJyv/Iyou/yMqLv8jKi7/Iyou/yMqLv8jKi7/Iyou/yIpLP8fJCn/GiEl/xohJf8eJCj/Iikt/yMqLv8jKi7/Iyou/yMqLv8jKi7/Iyou/yMqLv8jKi7/Iyou/yMqLv8jKi7/Iyou/yMqLv8jKi7/Iyou/yMqLv8jKi7/Iyou/yMqLv8jKi7/Iyou/yMqLv8jKi7/Iyou/yMqLv8jKi7/Iyou/yMqLv8jKi7/Iyou/yMqLv95hJX/eYSV/3mElf95hJX/eYSV/3mElf95hJX/eYSV/3mElf95hJX/eYSV/3mElf95hJX/Iyou/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8AAAD/AAAA/wAAAP8=",
+  width: 14,
+  height: 19
 }
+
+const DG_INTERFACE_ROW_END = {
+  icon: "eYSV/yMqLv8AAAD/Iyou/w==",
+  width: 2,
+  height: 2
+}
+
+const PLAYER_ICONS = [
+  {
+    name: "Player1",
+    icon: "ADPU/wAz1P8AM9T/ADPU/wAz1P8AHIj/AByI/wAciP8AHIj/AByI/wAciP8AHIj/AByI/wAciP8AHIj/AByI/wAciP8AHIj/AByI/wAciP8AHIj/AByI/wAciP8AHIj/AByI/w==",
+    width: 5,
+    height: 5
+  },
+  {
+    name: "Player2",
+    icon: "z9cA/8/XAP/P1wD/z9cA/8/XAP+HiwD/h4sA/4eLAP+HiwD/h4sA/4eLAP+HiwD/h4sA/4eLAP+HiwD/h4sA/4eLAP+HiwD/h4sA/4eLAP+HiwD/h4sA/4eLAP+HiwD/h4sA/w==",
+    width: 5,
+    height: 5
+  },
+  {
+    name: "Player3",
+    icon: "ANF0/wDRdP8A0XT/ANF0/wDRdP8Ag0f/AINH/wCDR/8Ag0f/AINH/wCDR/8Ag0f/AINH/wCDR/8Ag0f/AINH/wCDR/8Ag0f/AINH/wCDR/8Ag0f/AINH/wCDR/8Ag0f/AINH/w==",
+    width: 5,
+    height: 5
+  },
+  {
+    name: "Player4",
+    icon: "AOHa/wDh2v8A4dr/AOHa/wDh2v8AmJP/AJiT/wCYk/8AmJP/AJiT/wCYk/8AmJP/AJiT/wCYk/8AmJP/AJiT/wCYk/8AmJP/AJiT/wCYk/8AmJP/AJiT/wCYk/8AmJP/AJiT/w==",
+    width: 5,
+    height: 5
+  },
+  {
+    name: "Player5",
+    icon: "YIhu/2CIbv9giG7/YIhu/2CIbv8qOjD/Kjow/yo6MP8qOjD/Kjow/yo6MP8qOjD/Kjow/yo6MP8qOjD/Kjow/yo6MP8qOjD/Kjow/yo6MP8qOjD/Kjow/yo6MP8qOjD/Kjow/w==",
+    width: 5,
+    height: 5
+  }
+]
 
 const KEY_ICONS = [
   {
