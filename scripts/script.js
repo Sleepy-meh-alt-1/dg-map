@@ -527,17 +527,20 @@ function scanDungeonMapFull() {
 
 function highlightCorridors() {
   clearTimeout(timeouts.highlightCorridors);
-  overlay(OVERLAYS.corridors, () => {
-    for (let row = 0; row < GRID_HEIGHT; row++) {
-      for (let col = 0; col < GRID_WIDTH; col++) {
-        const room = grid[row][col];
-        if (room.up)    alt1.overLayRect(0xffff00ff, room.x + Math.round(room.width / 2) - 2, room.y - 4, 4, 4, 5000, 2)
-        if (room.down)  alt1.overLayRect(0xffff00ff, room.x + Math.round(room.width / 2) - 2, room.y + room.height + 2, 4, 4, 5000, 2)
-        if (room.right) alt1.overLayRect(0xffff00ff, room.x + room.width + 2, room.y + Math.round(room.height / 2) - 2, 4, 4, 5000, 2)
-        if (room.left)  alt1.overLayRect(0xffff00ff, room.x - 4, room.y + Math.round(room.height / 2) - 2, 4, 4, 5000, 2)
+
+  if (inFloor && grid && grid.length > 0) {
+    overlay(OVERLAYS.corridors, () => {
+      for (let row = 0; row < GRID_HEIGHT; row++) {
+        for (let col = 0; col < GRID_WIDTH; col++) {
+          const room = grid[row][col];
+          if (room.up)    alt1.overLayRect(0xffff00ff, room.x + Math.round(room.width / 2) - 2, room.y - 4, 4, 4, 5000, 2)
+          if (room.down)  alt1.overLayRect(0xffff00ff, room.x + Math.round(room.width / 2) - 2, room.y + room.height + 2, 4, 4, 5000, 2)
+          if (room.right) alt1.overLayRect(0xffff00ff, room.x + room.width + 2, room.y + Math.round(room.height / 2) - 2, 4, 4, 5000, 2)
+          if (room.left)  alt1.overLayRect(0xffff00ff, room.x - 4, room.y + Math.round(room.height / 2) - 2, 4, 4, 5000, 2)
+        }
       }
-    }
-  });
+    });
+  }
 
   timeouts.highlightCorridors = setTimeout(highlightCorridors, 5000);
 }
