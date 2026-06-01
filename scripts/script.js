@@ -12,10 +12,12 @@ const timeouts = {
   scanPlayerRoom: null,
   buildGrid: null,
   highlightCorridors: null,
+  highlightGatestone: null,
 }
 
 let teamMembersSinceUs = [];
 let playerIndex = 0;
+let gatestone1Location = null;
 let dungeonStartTime = null;
 let inFloor = false;
 let myKeys;
@@ -33,6 +35,7 @@ const OVERLAYS = {
   rooms: 'rooms',
   player: 'player',
   corridors: 'corridors',
+  gatestone: 'gatestone',
 }
 const currentOverlay = OVERLAYS.default;
 const renderedOverlays = new Set();
@@ -343,6 +346,33 @@ async function checkLine(line) {
     return;
   }
 
+  const gatestoneMatch = line.match(/You (create|place) (?:a|the) gatestone( 2)?\./i);
+  if (gatestoneMatch) {
+    const action = gatestoneMatch[1].toLowerCase();
+    const gs1 = !gatestoneMatch[2];
+
+    if (gs1) {
+      if (action === "create") {
+        gatestone1Location = null;
+        clearOverlay(OVERLAYS.gatestone);
+      }
+      else if (action === "place") {
+        gatestone1Location = scanPlayerRoom();
+        highlightGatestone();
+      }
+    }
+    return;
+  }
+  if (line.includes("The gatestone breaks as you draw upon the magic that binds it")) {
+    if (!gatestone1Location) return;
+
+    const playerRoom = scanPlayerRoom();
+    if (playerRoom.id === gatestone1Location.id) {
+      console.log('Gatestone 1 broken in room', playerRoom.id);
+      gatestone1Location = null;
+      clearOverlay(OVERLAYS.gatestone);
+    }
+  }
 
   const partySizeMatch = line.match(/Party Size:.*(\d):\d/);
   if (partySizeMatch) {
@@ -790,6 +820,21 @@ function setRoomState(room) {
     }
   }
 }
+
+function highlightGatestone() {
+  clearTimeout(timeouts.highlightGatestone);
+  if (!SHOW_GATESTONE_HIGHLIGHT || !gatestone1Location) {
+    timeouts.highlightGatestone = setTimeout(highlightGatestone, 300);
+    return;
+  }
+
+  overlay(OVERLAYS.gatestone, () => {
+    alt1.overLayImage(gatestone1Location.x + 7, gatestone1Location.y + 6, GATESTONE_1_HL.icon, GATESTONE_1_HL.width, 1000);
+  });
+
+  timeouts.highlightGatestone = setTimeout(highlightGatestone, 300);
+}
+
 let playerScanCounter = -1;
 function scanPlayerRoom() {
   let ready = true;
@@ -1356,6 +1401,18 @@ document.getElementById("highlightCorridors").addEventListener("change", e => {
   else {
     clearTimeout(timeouts.highlightCorridors);
     clearOverlay(OVERLAYS.corridors);
+  }
+});
+
+
+document.getElementById("highlightGatestone").addEventListener("change", e => {
+  SHOW_GATESTONE_HIGHLIGHT = e.target.checked;
+  if (SHOW_GATESTONE_HIGHLIGHT) {
+    highlightGatestone();
+  }
+  else {
+    clearTimeout(timeouts.highlightGatestone);
+    clearOverlay(OVERLAYS.gatestone);
   }
 });
 
