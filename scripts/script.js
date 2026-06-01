@@ -607,7 +607,8 @@ function scanDungeonMapPartial() {
       const room = indexedRooms[roomId];
       setRoomState(room);
 
-      alt1.overLayRect(0xffff00ff, room.x, room.y, room.width, room.height, 600, 1)
+      if (SHOW_SCAN_OVERLAY)
+        alt1.overLayRect(0xffff00ff, room.x, room.y, room.width, room.height, 600, 1)
 
       if (room.state !== "unknown") {
         knownRooms.add(room.id);
@@ -618,7 +619,8 @@ function scanDungeonMapPartial() {
       const room = indexedRooms[roomId];
       setRoomState(room);
 
-      alt1.overLayRect(0xffff00ff, room.x, room.y, room.width, room.height, 600, 1)
+      if (SHOW_SCAN_OVERLAY)
+        alt1.overLayRect(0xffff00ff, room.x, room.y, room.width, room.height, 600, 1)
 
       if (room.state !== "unknown") {
         knownRooms.add(room.id);
@@ -1339,6 +1341,7 @@ let COLOR_CRIT_FALSE = hexToAlt1Color("#00bfff");
 
 let SHOW_KEY_OVERLAY = true
 let SHOW_CRIT_OVERLAY = true;
+let SHOW_SCAN_OVERLAY = true;
 let SHOW_PLAYER_HIGHLIGHT = true;
 let SHOW_CORRIDOR_HIGHLIGHT = true;
 
@@ -1351,6 +1354,7 @@ document.getElementById("colorCritFalse").addEventListener("input", e => COLOR_C
 
 document.getElementById("showKeyOverlay").addEventListener("change", e => SHOW_KEY_OVERLAY = e.target.checked);
 document.getElementById("showCritOverlay").addEventListener("change", e => SHOW_CRIT_OVERLAY = e.target.checked);
+document.getElementById("showScanOverlay").addEventListener("change", e => SHOW_SCAN_OVERLAY = e.target.checked);
 
 
 document.querySelectorAll(".panel .panel-toggle").forEach(button => {
