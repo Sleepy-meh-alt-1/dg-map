@@ -155,9 +155,9 @@ const KEY_ICONS = [
   },
   {
     name: "Gold Crescent Key",
-    icon: "Jklb/ydNYf8pUWb/L1x1/zltiv86cI3/JEZY/ytSZ/8uWG//QHua/0WEpv9Iiav/K1No/0J/oP9IjLD/N2uH/zhtiv85bov/P3iX/0KBov8rVGz/JEda/yRHWv8kR1r/RIWm/yRIXP8kR1r/JEda/yRHWv8kRln/",
-    width: 6,
-    height: 5
+    icon: "JE5j/ylYb/80bYn/N3GM/zlzkP81bIj/LmF7/y5feP8iS1//JU9m/y5jff83bor/N3KN/zZui/8sXnj/MGN+/yFHXP8kTWP/JVJo/zRsif83cIv/N3KO/zRrh/8tX3n/H0VY/yJLYP8kUGX/K1x1/zZtiv83cY3/OHOQ/zVriP8fQ1X/JU9l/ypWb/8/fp3/RIiq/0WJrP9ChKX/RIeq/yNOY/8/fp3/N3KP/zVsif82cIz/MWWA/x9GW/8fRlv/OXSR/0CCo/8hSmD/H0Va/x9FWv8fRVj/H0VY/x9FWP9Chab/H0Zc/x9FWv8fRVr/H0VY/xg3Sf8YN0n/GThJ/w==",
+    width: 8,
+    height: 8
   },
   {
     name: "Gold Diamond Key",
@@ -233,15 +233,15 @@ const KEY_ICONS = [
   },
   {
     name: "Green Triangle Key",
-    icon: "Sm8s/z1bJP9BZCj/IjUU/wADAP8AAwD/AAMA/wACAP8AAAD/AAAA/12NOP8/Xyb/OVYj/w0fCf8AEAD/ABAA/wAQAP8ADgD/AAgA/wAIAP9upkL/R2ss/xUpDf8AEAD/ABAA/wAQAP8AEAD/ABAA/wAQAP8AEAD/V4U0/zxbI/8RIwr/CBoF/wgaBf8IGgX/CBoF/wgaBf8JGwX/CRoF/w==",
-    width: 10,
-    height: 4
+    icon: "OVwf/zlaH/85Wh//OVof/0FkJP8kQBP/AAoA/wAJAP85XB//OVwf/zlbH/9BZCT/Olsh/xElBv8ABwD/AAcA/zlcH/85XB//OVwf/0lyKv8bNAv/AAcA/wAHAP8ABwD/R24n/zpdH/9Kcyv/OVsg/wMXAf8ABwD/AAcA/wAHAP91sEb/PV4g/0VqJ/8fOBD/AAcA/wAHAP8ABwD/AAcA/26nQv9VgzL/PFwg/wYaAv8ABwD/AAcA/wAHAP8ABwD/aJ0+/1F9Lv8OJwb/AAcA/wAHAP8ABwD/AAcA/wAHAP9cjDb/QmYk/ytEFf8pQxT/KkMU/ypDGP8qQxj/K0MX/w==",
+    width: 8,
+    height: 8
   },
   {
     name: "Green Wedge Key",
-    icon: "HSsQ/yAxFP8lNhf/KUAa/y1EHP8tRhz/MEcc/zBKHP8cKxD/IC8Q/yM0F/8oPRf/RGcq/0ZrK/9Jbyz/S3It/xwoEP8fLRD/KD0X/011Lv9mmz7/aqJB/2ykQf9tp0P/GCcQ/xwsEP80Tx7/ZJk9/1B4MP8cJxD/HCcQ/xwnEP8YJRD/LEMa/1uLN/9Pdi//HCcQ/xwnEP8cJxD/HCcQ/x8tFP9PeDD/WIU1/x8sEv8cJxD/HCcQ/xwnEP8cJxD/",
+    icon: "ITUQ/ydAFP8pQxX/LEUV/yxJGP8uTBr/MU4a/011Kv8eMg7/JDwR/ylDFf8rRRX/LEcV/y5KGv8uTRr/QmYk/xouDf8hNxD/KEEU/ypEFf8sRhX/LUoX/y5MGv83WB//GiwM/x8zEP8kPhT/KUQV/ytGFf8sRxf/Lksa/zBNGv8ZKwf/GzAQ/yI5Ev9Eaif/SnEq/0x1LP9PeS7/UX0v/xkpB/8jOhD/T3ot/2qhQP9yq0P/dK9E/zlaH/8lPhL/FScH/zJPGP9ejTb/FSUH/xUlB/8VJQf/FSUH/xUlB/8nPxT/Xo83/yxGF/8VJQf/FSUH/xUlB/8VJQf/FSUH/w==",
     width: 8,
-    height: 6
+    height: 8
   },
   {
     name: "Orange Corner Key",
@@ -299,9 +299,9 @@ const KEY_ICONS = [
   },
   {
     name: "Purple Crescent Key",
-    icon: "RRwl/0ofJ/9PICr/UyMs/2EoM/91MED/dzJA/0McJP9IHCb/WCQt/10mMf+SPU//nkFU/6NEV/9AHCL/WyUx/5g/Uf+nRVn/fTVC/4A1RP+BNEX/SR0n/447TP+ZP1H/YSoz/1EhKv9RICr/UCAq/w==",
-    width: 7,
-    height: 4
+    icon: "Thok/1sfK/9zKzn/diw8/3ksPv9xKjj/YSIx/2AiLv9LGST/Txon/2YkM/90LDn/diw8/3QqOf9fIi7/YyMy/0cXIv9NGiX/Uhsn/3MqOf91LDz/dyw8/24pN/9fIi7/RRUh/0saI/9QGiX/XiAw/3QrOf92LDz/eCw+/3AqOP9DFR//Uxso/1shLP+TOk3/nz9T/6BAVP+aPVD/nj5T/1QeKf+TOE3/hDJD/30wQP+BMUL/dSs6/08aJf9PGiX/hzNG/5c6Tv9THCj/Txol/08aJf9NGiX/TRol/00aJf+bPVD/Txol/08aJf9PGiX/TRol/z8UHP8/FBz/QRUc/w==",
+    width: 8,
+    height: 8
   },
   {
     name: "Purple Diamond Key",
@@ -389,9 +389,9 @@ const KEY_ICONS = [
   },
   {
     name: "Yellow Corner Key",
-    icon: "F3J7/xhveP8rP0P/K0dM/xdye/8Xcnv/GHV+/xp8hv8wYGX/MWFm/zRqcP83dXz/SE1Q/0tPUf9NUVT/TlNW/0dMT/9JTlH/TFFT/05TVv9HTE7/SU5Q/0xRUv9OU1X/RktN/0dNTv9HTE7/R0pN/w==",
-    width: 4,
-    height: 7
+    icon: "EHV+/xB1fv8QdX7/IkxP/ywyMv8sMjL/KEtO/x6irv8QdX7/EHV+/xB1fv8QdX7/IkxP/ywyMv8oTE//LIKL/xB1fv8QdX7/EHV+/xB1fv8Rcnv/J0BC/ylQU/8+Y2j/EHV+/xB1fv8QdX7/EXiB/xJ8hf8Tf4j/Kmlv/0Vzd/8eipT/Kl9l/ythZv8xanL/NHh//ziCiv88jpb/Tmlt/yqdqP9DSUv/RUxO/0lPUP9MUFP/T1NW/1BVWP9TWFz/Kpym/0NGS/9FS03/SU5Q/0xQUv9OU1X/UFVY/1JXW/8ql6L/QkZJ/0VKTP9HTU//S09R/01SVP9PVFb/T1RX/w==",
+    width: 8,
+    height: 8
   },
   {
     name: "Yellow Crescent Key",
