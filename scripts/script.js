@@ -702,16 +702,33 @@ function setRoomState(room) {
     )
     for (const key of KEY_ICONS) {
       const matches = JSON.parse(alt1.bindFindSubImg(bind, key.icon, key.width, 0, 0, room.width, room.height));
+      const match = matches[0];
 
       // if we have the key, set the color to green, oterwise set to red
-      if (matches.length > 0) {
+      if (match) {
         room.state = "key"
+        room.color = myKeys.has(key.name.toLowerCase()) ?
+          COLOR_KEY_YES :
+          COLOR_KEY_NO
 
-        if (myKeys.has(key.name.toLowerCase())) {
+        break;
+      }
+    }
+
+    // If we still haven't found a key, check for highlighted keys
+    if (room.state !== "key") {
+      for (const key of KEY_HL_ICONS) {
+        if (!key.icon) continue;
+
+        const matches = JSON.parse(alt1.bindFindSubImg(bind, key.icon, key.width, 0, 0, room.width, room.height));
+        const match = matches[0];
+
+        if (match) {
+          room.state = "key"
+
+          myKeys.add(key.name.toLowerCase());
           room.color = COLOR_KEY_YES
-        }
-        else {
-          room.color = COLOR_KEY_NO
+          break;
         }
       }
     }
