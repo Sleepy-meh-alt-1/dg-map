@@ -823,24 +823,25 @@ function scanPlayerRoom() {
     const match = matches[0];
     if (match) {
       playerRoom = room;
-      const col = TEAM_MEMBER_COLORS[playerIndex];
-      const hexArgb = (0xff << 24) | (col[0] << 16) | (col[1] << 8) | col[2];
-      // alt1.overLayRect(hexArgb, room.x + match.x - 3, room.y + match.y - 1, 11, 11, 300, 1);
-      // alt1.overLayRect(0xffffffff, room.x + 2, room.y + 2, room.width - 4, room.height - 4, 150, 4);
-      overlay(OVERLAYS.player, () => {
-        // const offset = playerScanCounter === 0 ? 5 : 2;
-        // alt1.overLayRect(hexArgb, room.x + offset, room.y + offset, room.width - offset * 2, room.height - offset * 2, 5000, 3);
+      if (SHOW_PLAYER_HIGHLIGHT) {
+        const color = A1lib.mixColor(...TEAM_MEMBER_COLORS[playerIndex]);
+        // alt1.overLayRect(color, room.x + match.x - 3, room.y + match.y - 1, 11, 11, 300, 1);
+        // alt1.overLayRect(0xffffffff, room.x + 2, room.y + 2, room.width - 4, room.height - 4, 150, 4);
+        overlay(OVERLAYS.player, () => {
+          // const offset = playerScanCounter === 0 ? 5 : 2;
+          // alt1.overLayRect(color, room.x + offset, room.y + offset, room.width - offset * 2, room.height - offset * 2, 5000, 3);
 
-        const offset = 2 + playerScanCounter * 2;
-        alt1.overLayRect(hexArgb, room.x + offset, room.y + offset, room.width - offset * 2, room.height - offset * 2, 5000, 3);
+          const offset = 2 + playerScanCounter * 2;
+          alt1.overLayRect(color, room.x + offset, room.y + offset, room.width - offset * 2, room.height - offset * 2, 5000, 3);
 
 
-        // if (playerScanCounter === 0)
-        //   alt1.overLayRect(hexArgb, room.x + 5, room.y + 5, room.width - 10, room.height - 10, 5000, 3);
-        //   // alt1.overLayRect(hexArgb, room.x + 7, room.y + 7, room.width - 14, room.height - 14, 150, 2);
-        // else
-        //   alt1.overLayRect(hexArgb, room.x + 2, room.y + 2, room.width - 4, room.height - 4, 5000, 3);
-      });
+          // if (playerScanCounter === 0)
+          //   alt1.overLayRect(color, room.x + 5, room.y + 5, room.width - 10, room.height - 10, 5000, 3);
+          //   // alt1.overLayRect(color, room.x + 7, room.y + 7, room.width - 14, room.height - 14, 150, 2);
+          // else
+          //   alt1.overLayRect(color, room.x + 2, room.y + 2, room.width - 4, room.height - 4, 5000, 3);
+        });
+      }
       break;
     }
   }
