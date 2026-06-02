@@ -438,6 +438,7 @@ function startFloor() {
 }
 
 function stopFloor() {
+  clearAllOverlays();
   clearTimeouts();
   scanInterface();
   inFloor = false
@@ -714,7 +715,7 @@ function setRoomState(room) {
       // console.log('Room', room.id, 'state changed to unknown from', prevState);
       unknownRescans.add(room.id);
     }
-    room.color = RED
+    room.color = COLOR_KEY_NO
     room.state = "unknown"
   }
   else {
@@ -723,7 +724,7 @@ function setRoomState(room) {
 
   // If it's really bright, set to visited
   if (avgBrightness > VISITED_THRESHOLD) {
-    room.color = GREEN
+    room.color = COLOR_KEY_YES
     room.state = "visited"
   }
 
@@ -1078,8 +1079,8 @@ function showStats() {
 
   const completion = total > 0 ? Math.round((visited / total) * 100) : 0;
 
-  const goalMinutes = Number(document.getElementById("goalMinutes").value);
-  const goalSeconds = Number(document.getElementById("goalSeconds").value);
+  goalMinutes = Number(document.getElementById("goalMinutes").value);
+  goalSeconds = Number(document.getElementById("goalSeconds").value);
 
   const TARGET_TIME_SECONDS = goalMinutes * 60 + goalSeconds;
 
@@ -1344,6 +1345,10 @@ let SHOW_CRIT_OVERLAY = true;
 let SHOW_SCAN_OVERLAY = true;
 let SHOW_PLAYER_HIGHLIGHT = true;
 let SHOW_CORRIDOR_HIGHLIGHT = true;
+let SHOW_GATESTONE_HIGHLIGHT = true;
+
+let goalMinutes = 0
+let goalSeconds = 0
 
 
 document.getElementById("colorKeyYes").addEventListener("input", e => COLOR_KEY_YES = hexToAlt1Color(e.target.value));
@@ -1419,6 +1424,87 @@ document.getElementById("highlightGatestone").addEventListener("change", e => {
 });
 
 
+
+function saveSettings() {
+    const settings = {
+        showKeyOverlay: document.getElementById("showKeyOverlay").checked,
+        showCritOverlay: document.getElementById("showCritOverlay").checked,
+        showScanOverlay: document.getElementById("showScanOverlay").checked,
+        highlightMyLocation: document.getElementById("highlightMyLocation").checked,
+        highlightCorridors: document.getElementById("highlightCorridors").checked,
+        highlightGatestone: document.getElementById("highlightGatestone").checked,
+
+        colorKeyYes: document.getElementById("colorKeyYes").value,
+        colorKeyNo: document.getElementById("colorKeyNo").value,
+        colorCritTrue: document.getElementById("colorCritTrue").value,
+        colorCritFalse: document.getElementById("colorCritFalse").value,
+
+        goalMinutes: document.getElementById("goalMinutes").value,
+        goalSeconds: document.getElementById("goalSeconds").value,
+
+        floorSize:document.querySelector('input[name="floorSize"]:checked')?.value
+    };
+
+    localStorage.setItem("dgmap_settings", JSON.stringify(settings));
+}
+
+function loadSettings() {
+  const settings = JSON.parse(localStorage.getItem("dgmap_settings"));
+
+  if (!settings)
+      return;
+
+  document.getElementById("showKeyOverlay").checked = settings.showKeyOverlay;
+  document.getElementById("showCritOverlay").checked = settings.showCritOverlay;
+  document.getElementById("showScanOverlay").checked = settings.showScanOverlay;
+  document.getElementById("highlightMyLocation").checked = settings.highlightMyLocation;
+  document.getElementById("highlightCorridors").checked = settings.highlightCorridors;
+  document.getElementById("highlightGatestone").checked = settings.highlightGatestone;
+
+  document.getElementById("colorKeyYes").value = settings.colorKeyYes;
+  document.getElementById("colorKeyNo").value = settings.colorKeyNo;
+  document.getElementById("colorCritTrue").value = settings.colorCritTrue;
+  document.getElementById("colorCritFalse").value = settings.colorCritFalse;
+
+  document.getElementById("goalMinutes").value = settings.goalMinutes;
+  document.getElementById("goalSeconds").value = settings.goalSeconds;
+
+  if (settings.floorSize) {
+    const radio = document.querySelector(
+      `input[name="floorSize"][value="${settings.floorSize}"]`
+    );
+
+    radio.checked = true;
+    radio.dispatchEvent(new Event("change"));
+  }
+
+  SHOW_KEY_OVERLAY = settings.showKeyOverlay;
+  SHOW_CRIT_OVERLAY = settings.showCritOverlay;
+  SHOW_SCAN_OVERLAY = settings.showScanOverlay;
+
+  SHOW_PLAYER_HIGHLIGHT = settings.highlightMyLocation;
+  SHOW_CORRIDOR_HIGHLIGHT = settings.highlightCorridors;
+  SHOW_GATESTONE_HIGHLIGHT = settings.highlightGatestone;
+
+  COLOR_KEY_YES = hexToAlt1Color(settings.colorKeyYes);
+  COLOR_KEY_NO = hexToAlt1Color(settings.colorKeyNo);
+
+  COLOR_CRIT_TRUE = hexToAlt1Color(settings.colorCritTrue);
+  COLOR_CRIT_FALSE = hexToAlt1Color(settings.colorCritFalse);
+
+  goalMinutes = settings.goalMinutes
+  goalSeconds = settings.goalSeconds
+}
+
+window.addEventListener('load', loadSettings);
+
 window.addEventListener('beforeunload', () => {
-  clearAllOverlays();
+    saveSettings();
+    clearAllOverlays();
 });
+
+document
+    .querySelectorAll("input")
+    .forEach(input =>
+        input.addEventListener("change", saveSettings)
+    );
