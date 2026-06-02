@@ -1035,7 +1035,10 @@ function showStats() {
   let deadEnds = 0;
   let branches = 0;
 
-  let unreachable = getUnreachableRooms()
+  let unreachable = 0;
+
+  getUnreachableRooms()
+
 
   let rpm = "-";
 
@@ -1056,6 +1059,9 @@ function showStats() {
           break;
         case "key":
           keys++;
+          break;
+        case "unreachable":
+          unreachable++;
           break;
       }
 
@@ -1213,14 +1219,12 @@ function getUnreachableRooms() {
     }
   }
 
-
   let unreachable = 0;
   for (let row = 0; row < GRID_HEIGHT; row++) {
     for (let col = 0; col < GRID_WIDTH; col++) {
       const room = fakeGrid[row][col];
 
       if (room.state === "unknown") {
-        unreachable++;
         grid[row][col].state = "unreachable"
 
         // debug overlay
@@ -1230,7 +1234,6 @@ function getUnreachableRooms() {
     }
   }
 
-  return unreachable;
 }
 
 
@@ -1494,9 +1497,10 @@ function loadSettings() {
 
   goalMinutes = settings.goalMinutes
   goalSeconds = settings.goalSeconds
+
 }
 
-window.addEventListener('load', loadSettings);
+window.addEventListener('load', loadSettings );
 
 window.addEventListener('beforeunload', () => {
     saveSettings();
@@ -1508,3 +1512,5 @@ document
     .forEach(input =>
         input.addEventListener("change", saveSettings)
     );
+
+
