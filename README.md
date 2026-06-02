@@ -38,17 +38,41 @@ IDK, some stats you'll probably never look at because you're already 3 rooms ahe
 ### Custom colors
 Also yes, all overlay colors are customizable because apparently everyone has very strong opinions about what shade of red means "missing key".
 
+### Goal timer
+
+For the truly sweaty Dungeoneering players, the plugin allows you to set a target completion time. If the floor timer exceeds your configured goal, the plugin will display an Alt1 tooltip to let you know you've missed your target. Whether this serves as motivation or emotional damage is left up to the user. This feature is disabled by default. Setting the goal time to `0:00` disables the timer entirely.
+
+### Player tracking
+
+In a busy 5-player dungeon it can sometimes be surprisingly difficult to quickly spot your own location on the map amongst all the colored player icons. The plugin can help by tracking players and displaying a better overlay directly on the dungeon map. By default, your player is identified based on party join order. If this detection is incorrect for any reason, you can manually select yourself by hovering over your name in the party interface and pressing the configured Alt1 keybind.
+
+https://github.com/user-attachments/assets/7fbc223d-f875-4512-ad06-7f9f307e7b03
+
+### Gatestone highlighting
+
+The personal gatestone and group gatestone icons are annoyingly similar on the minimap. To help with this, the plugin can highlight your personal gatestone, making it much easier to tell at a glance which one is yours and which one belongs to the group.
+
+A before and after example
+
+<img width="238" height="58" alt="image" src="https://github.com/user-attachments/assets/cf13a700-6592-4169-8c7d-609ee98fe02d" />
+
 ## Notes and Recommended Settings
 
 The in-game Dungeoneering map is transparent... which is great for aesthetics and terrible for screen reading. Since this plugin relies entirely on image detection, the map background can heavily affect accuracy depending on what is moving behind it. NPCs, particles, animations and random visual noise can all interfere with detection. 
+
+Excessive false positives can reduce performance and cause unnecessary scans. You can visualize this using the **Show Scan Overlay** setting. The magenta overlay is primarily a debugging tool and should normally only appear briefly when entering a newly discovered room. If you see magenta overlays appearing all over the map, the plugin is likely detecting false positives caused by whatever is behind the transparent map.
+
+Possible solutions include:
+- Moving the Dungeoneering map outside of the game view.
+- Placing an unused interface behind the map to provide a more consistent background.
+- Switching Alt1 to DirectX capture mode if you are using OpenGL.
+- Accepting that screen reading is cursed and living with the efficiency loss.
 
 The plugin was built with these setting
 
 - Font size: 12
 - Local timestamps: ON
 - Interface scaling: 100%
-- Alt1 DirectX Capture mode
-- When entering a floor make sure the text: *- Welcome to Daemonheim -* is visable in the chatbox
 
 Other configurations may still work, but since the plugin relies heavily on screen reading and OCR, changing font rendering or scaling can affect detection accuracy.
 
@@ -56,6 +80,14 @@ Other configurations may still work, but since the plugin relies heavily on scre
 
 Alt1 Installation link:
 alt1://addapp/https://sleepy-meh-alt-1.github.io/dg-map/appconfig.json
+
+## Special Thanks & Collaboration
+
+Huge thanks to everyone in the [AHelp Discord](https://discord.com/channels/382696689812766720/1273017803225698398/1508754943866175568) for the beta testing, bug reports, feature suggestions and general willingness to break the code in creative ways. A lot of the fixes, optimizations and quality-of-life improvements in this plugin came directly from community feedback and troubleshooting.
+
+Special thanks to **Farmer Hampe** for jumping into the project and contributing features, massive code cleanup/refactoring, and some very significant performance improvements. Several of the optimizations came from questioning my original "scan everything and hope for the best" approach and replacing it with something considerably smarter.
+
+If you encounter bugs, have feature suggestions, performance findings, or just want to provide feedback, please do so in the [**#dungeoneering**](https://discord.com/channels/382696689812766720/1273017803225698398) channel of the **AHelp Discord**. The project is still evolving and community feedback has been invaluable so far.
 
 # ⚠️ Disclaimer
 
