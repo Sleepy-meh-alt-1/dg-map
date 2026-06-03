@@ -418,11 +418,13 @@ function startFloor() {
   inFloor = true
   dungeonStartTime = Date.now();
   playerIndex = playerIndex || 0;
+  gatestone1Location = null;
   myKeys = new Set();
   failedGoal = false;
   buildGrid();
-  if (SETTINGS.highlightMyLocation)
-    scanPlayerRoom();
+  if (SETTINGS.highlightMyLocation) scanPlayerRoom();
+  if (SETTINGS.highlightGatestone) highlightGatestone();
+  if (SETTINGS.highlightCorridors) highlightCorridors();
   scanInterface();
   alt1.clearTooltip();
 }
@@ -600,9 +602,8 @@ function highlightCorridors() {
     });
   }
 
-  timeouts.highlightCorridors = setTimeout(highlightCorridors, 5000);
+  timeouts.highlightCorridors = setTimeout(highlightCorridors, 4000);
 }
-timeouts.highlightCorridors = setTimeout(highlightCorridors, 5000);
 
 function scanDungeonMapPartial() {
   clearTimeout(timeouts.scanDungeonMap);
@@ -853,14 +854,14 @@ function setRoomState(room) {
 
 function highlightGatestone() {
   clearTimeout(timeouts.highlightGatestone);
-  if (!SETTINGS.highlightGatestone || !gatestone1Location) {
-    timeouts.highlightGatestone = setTimeout(highlightGatestone, 300);
+  if (!SETTINGS.highlightGatestone)
     return;
-  }
 
-  overlay(OVERLAYS.gatestone, () => {
-    alt1.overLayImage(gatestone1Location.x + 7, gatestone1Location.y + 6, GATESTONE_1_HL.icon, GATESTONE_1_HL.width, 1000);
-  });
+  if (gatestone1Location) {
+    overlay(OVERLAYS.gatestone, () => {
+      alt1.overLayImage(gatestone1Location.x + 7, gatestone1Location.y + 6, GATESTONE_1_HL.icon, GATESTONE_1_HL.width, 1000);
+    });
+  }
 
   timeouts.highlightGatestone = setTimeout(highlightGatestone, 300);
 }
