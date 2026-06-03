@@ -372,6 +372,14 @@ async function checkLine(line) {
       gatestone1Location = null;
       clearOverlay(OVERLAYS.gatestone);
     }
+    return;
+  }
+
+  const dungeonSizeMatch = line.match(/Dungeon Size:.*(Small|Medium|Large)/);
+  if (dungeonSizeMatch) {
+    const size = dungeonSizeMatch[1].toLowerCase();
+    setMapSize(size);
+    return;
   }
 
   const partySizeMatch = line.match(/Party Size:.*(\d):\d/);
@@ -464,6 +472,36 @@ function findAnchor() {
   const rsBind = alt1.bindRegion(0, 0, alt1.rsWidth, alt1.rsHeight);
   const matches = JSON.parse(alt1.bindFindSubImg(rsBind, ANCHOR_ICON.icon, ANCHOR_ICON.width, 0, 0, alt1.rsWidth, alt1.rsHeight));
   return matches[0];
+}
+
+function setMapSize(floorSize) {
+  if (floorSize === "small") {
+    GRID_WIDTH = 4;
+    GRID_HEIGHT = 4;
+    mapWidth = 152;
+    mapHeight = 152;
+  }
+  else if (floorSize === "medium") {
+    GRID_WIDTH = 4;
+    GRID_HEIGHT = 8;
+    mapWidth = 152;
+    mapHeight = 280;
+  }
+  else {
+    floorSize = "large";
+    GRID_WIDTH = 8;
+    GRID_HEIGHT = 8;
+    mapWidth = 280;
+    mapHeight = 280;
+  }
+  console.log('Map size:', floorSize);
+
+  const radio = document.querySelector(`input[name="floorSize"][value="${floorSize}"]`);
+  radio.checked = true;
+
+  if (grid && grid.length > 0) {
+    buildGrid();
+  }
 }
 
 function buildGrid() {
@@ -1297,9 +1335,7 @@ document.querySelectorAll('input[name="floorSize"]').forEach(radio => {
 
   radio.addEventListener("change", () => {
     // TODO CHECK MAP WIDTH VALUES FOR SMALL AND MEDIUM FLOORS
-    if (radio.value === "small") { GRID_WIDTH = 4; GRID_HEIGHT = 4; mapWidth = 152; mapHeight = 152 }
-    if (radio.value === "medium") { GRID_WIDTH = 4; GRID_HEIGHT = 8; mapWidth = 152; mapHeight = 280 }
-    if (radio.value === "large") { GRID_WIDTH = 8; GRID_HEIGHT = 8; mapWidth = 280; mapHeight = 280 }
+    setMapSize(radio.value);
   });
 });
 
@@ -1445,7 +1481,7 @@ function saveSettings() {
         goalMinutes: document.getElementById("goalMinutes").value,
         goalSeconds: document.getElementById("goalSeconds").value,
 
-        floorSize:document.querySelector('input[name="floorSize"]:checked')?.value
+        floorSize: document.querySelector('input[name="floorSize"]:checked')?.value
     };
 
     localStorage.setItem("dgmap_settings", JSON.stringify(settings));
@@ -1472,14 +1508,7 @@ function loadSettings() {
   document.getElementById("goalMinutes").value = settings.goalMinutes;
   document.getElementById("goalSeconds").value = settings.goalSeconds;
 
-  if (settings.floorSize) {
-    const radio = document.querySelector(
-      `input[name="floorSize"][value="${settings.floorSize}"]`
-    );
-
-    radio.checked = true;
-    radio.dispatchEvent(new Event("change"));
-  }
+  setMapSize(settings.floorSize);
 
   SHOW_KEY_OVERLAY = settings.showKeyOverlay;
   SHOW_CRIT_OVERLAY = settings.showCritOverlay;
