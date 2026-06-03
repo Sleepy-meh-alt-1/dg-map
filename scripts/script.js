@@ -408,17 +408,23 @@ function stopFloor() {
   alt1.clearTooltip();
 }
 
-// function scanAnchor() {
-//   clearTimeout(timeouts.scanAnchor);
-//   const location = findAnchor();
-//   if (!location) {
-//     timeouts.scanAnchor = setTimeout(scanAnchor, 600);
-//     console.log('Anchor not found, retrying scanAnchor');
-//     return;
-//   }
+function findMapButton() {
+  const rsBind = alt1.bindRegion(0, 0, alt1.rsWidth, alt1.rsHeight);
+  const matches = JSON.parse(alt1.bindFindSubImg(rsBind, DG_MAP_ICON.icon, DG_MAP_ICON.width, 0, 0, alt1.rsWidth, alt1.rsHeight));
+  return matches[0];
+}
 
-//   startFloor();
-// }
+function scanMapButton() {
+  const location = findMapButton();
+  if (location) {
+    console.log('Loaded while in a floor, starting floor');
+    // overlay(OVERLAYS.default, () => {
+    //   alt1.overLayRect(appColor, location.x - 3, location.y - 14, 22, 21, 2000, 2);
+    // });
+
+    startFloor();
+  }
+}
 
 function findAnchor() {
   const rsBind = alt1.bindRegion(0, 0, alt1.rsWidth, alt1.rsHeight);
@@ -1542,6 +1548,6 @@ window.addEventListener('load', () => {
   }, 1000);
 
   scanInterface();
-  // scanAnchor();
+  scanMapButton();
 
 });
