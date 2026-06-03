@@ -4,6 +4,29 @@ const reader = new Chatbox.default();
 const appColor = A1lib.mixColor(255, 199, 0);
 const timestampRegex = /\[\d{2}:\d{2}:\d{2}\]/g;
 
+
+// These will be used as default, and any saved settings will override them on load
+const SETTINGS = {
+
+  colorKeyYes: 0xff33aa33,
+  colorKeyNo: 0xffff0000,
+  colorCritTrue: 0xffffd700,
+  colorCritFalse: 0xff00bfff,
+
+  showKeyOverlay: true,
+  showCritOverlay: true,
+  showScanOverlay: true,
+  highlightMyLocation: true,
+  highlightCorridors: true,
+  highlightGatestone: true,
+
+  goalMinutes: 0,
+  goalSeconds: 0,
+
+  floorSize: "large",
+
+};
+
 let chatInterval = null;
 
 const timeouts = {
@@ -64,6 +87,14 @@ const TEAM_MEMBER_COLORS = [
   [130, 134, 6],
   [100, 120, 87],
 ]
+
+function hexToDecimalARGB(hex) {
+  hex = hex.replace("#", "");
+  return parseInt(hex, 16) | 0xff000000;
+}
+function decimalToHexRGB(color) {
+  return '#' + (color & 0xffffff).toString(16).padStart(6, "0");
+}
 
 function clearAllOverlays() {
   for (let name of renderedOverlays) {
@@ -390,7 +421,7 @@ function startFloor() {
   myKeys = new Set();
   failedGoal = false;
   buildGrid();
-  if (SHOW_PLAYER_HIGHLIGHT)
+  if (SETTINGS.highlightMyLocation)
     scanPlayerRoom();
   scanInterface();
   alt1.clearTooltip();
@@ -453,8 +484,10 @@ function setMapSize(floorSize) {
     mapHeight = 280;
   }
   console.log('Map size:', floorSize);
+  SETTINGS.floorSize = floorSize;
+  saveSettings();
 
-  const radio = document.querySelector(`input[name="floorSize"][value="${floorSize}"]`);
+  const radio = document.querySelector(`input[data-setting="floorSize"][value="${floorSize}"]`);
   radio.checked = true;
 
   if (grid && grid.length > 0) {
@@ -591,12 +624,12 @@ function scanDungeonMapPartial() {
       //DEBUG
       // alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 2000, 1)
 
-      if (SHOW_KEY_OVERLAY && room.state == 'key') {
+      if (SETTINGS.showKeyOverlay && room.state == 'key') {
         alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 2000, 1)
       }
 
-      if (SHOW_CRIT_OVERLAY && room.crit != null) {
-        alt1.overLayRect(room.crit ? COLOR_CRIT_TRUE : COLOR_CRIT_FALSE, room.x, room.y, room.width, room.height, 2000, 1);
+      if (SETTINGS.showCritOverlay && room.crit != null) {
+        alt1.overLayRect(room.crit ? SETTINGS.colorCritTrue : SETTINGS.colorCritFalse, room.x, room.y, room.width, room.height, 2000, 1);
       }
     }
 
@@ -604,7 +637,7 @@ function scanDungeonMapPartial() {
       const room = indexedRooms[roomId];
       setRoomState(room);
 
-      if (SHOW_SCAN_OVERLAY)
+      if (SETTINGS.showScanOverlay)
         alt1.overLayRect(0xffff00ff, room.x, room.y, room.width, room.height, 600, 1)
 
       if (room.state !== "unknown") {
@@ -616,7 +649,7 @@ function scanDungeonMapPartial() {
       const room = indexedRooms[roomId];
       setRoomState(room);
 
-      if (SHOW_SCAN_OVERLAY)
+      if (SETTINGS.showScanOverlay)
         alt1.overLayRect(0xffff00ff, room.x, room.y, room.width, room.height, 600, 1)
 
       if (room.state !== "unknown") {
@@ -711,7 +744,7 @@ function setRoomState(room) {
       // console.log('Room', room.id, 'state changed to unknown from', prevState);
       unknownRescans.add(room.id);
     }
-    room.color = COLOR_KEY_NO
+    room.color = SETTINGS.colorKeyNo
     room.state = "unknown"
   }
   else {
@@ -720,7 +753,7 @@ function setRoomState(room) {
 
   // If it's really bright, set to visited
   if (avgBrightness > VISITED_THRESHOLD) {
-    room.color = COLOR_KEY_YES
+    room.color = SETTINGS.colorKeyYes
     room.state = "visited"
   }
 
@@ -738,7 +771,7 @@ function setRoomState(room) {
         room.state = "key"
 
         myKeys.add(key.name.toLowerCase());
-        room.color = COLOR_KEY_YES
+        room.color = SETTINGS.colorKeyYes
         break;
       }
     }
@@ -753,8 +786,8 @@ function setRoomState(room) {
         if (match) {
           room.state = "key"
           room.color = myKeys.has(key.name.toLowerCase()) ?
-            COLOR_KEY_YES :
-            COLOR_KEY_NO
+            SETTINGS.colorKeyYes :
+            SETTINGS.colorKeyNo
 
           break;
         }
@@ -781,7 +814,7 @@ function setRoomState(room) {
     room.left = scanEdge(roomWithCorridors, "left");
 
 
-    if (SHOW_CORRIDOR_HIGHLIGHT && (room.up || room.right || room.down || room.left))
+    if (SETTINGS.highlightCorridors && (room.up || room.right || room.down || room.left))
       highlightCorridors(room);
 
     if (room.up) {
@@ -820,7 +853,7 @@ function setRoomState(room) {
 
 function highlightGatestone() {
   clearTimeout(timeouts.highlightGatestone);
-  if (!SHOW_GATESTONE_HIGHLIGHT || !gatestone1Location) {
+  if (!SETTINGS.highlightGatestone || !gatestone1Location) {
     timeouts.highlightGatestone = setTimeout(highlightGatestone, 300);
     return;
   }
@@ -847,7 +880,7 @@ function scanPlayerRoom() {
 
   clearTimeout(timeouts.scanPlayerRoom);
   if (!ready) {
-    if (SHOW_PLAYER_HIGHLIGHT)
+    if (SETTINGS.highlightMyLocation)
       timeouts.scanPlayerRoom = setTimeout(scanPlayerRoom, 500);
     return;
   }
@@ -865,7 +898,7 @@ function scanPlayerRoom() {
     const match = matches[0];
     if (match) {
       playerRoom = room;
-      if (SHOW_PLAYER_HIGHLIGHT) {
+      if (SETTINGS.highlightMyLocation) {
         const color = A1lib.mixColor(...TEAM_MEMBER_COLORS[playerIndex]);
         // alt1.overLayRect(color, room.x + match.x - 3, room.y + match.y - 1, 11, 11, 300, 1);
         // alt1.overLayRect(0xffffffff, room.x + 2, room.y + 2, room.width - 4, room.height - 4, 150, 4);
@@ -889,7 +922,7 @@ function scanPlayerRoom() {
   }
   const end = performance.now();
 
-  if (SHOW_PLAYER_HIGHLIGHT)
+  if (SETTINGS.highlightMyLocation)
     timeouts.scanPlayerRoom = setTimeout(scanPlayerRoom, 250);
 
   // console.log(PLAYER_ICONS[playerIndex].name, playerRoom ? `found at ${playerRoom.id}` : 'not found', `in <${Math.ceil((end - start) / 100) * 100} ms`);
@@ -1081,10 +1114,7 @@ function showStats() {
 
   const completion = total > 0 ? Math.round((visited / total) * 100) : 0;
 
-  goalMinutes = Number(document.getElementById("goalMinutes").value);
-  goalSeconds = Number(document.getElementById("goalSeconds").value);
-
-  const TARGET_TIME_SECONDS = goalMinutes * 60 + goalSeconds;
+  const TARGET_TIME_SECONDS = SETTINGS.goalMinutes * 60 + SETTINGS.goalSeconds;
 
   let elapsed = "-";
   let projected = "-";
@@ -1288,15 +1318,6 @@ function scanAdjacentSkillDoors(skill) {
 GUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 */
 
-// Radio buttons to select floor size
-document.querySelectorAll('input[name="floorSize"]').forEach(radio => {
-
-  radio.addEventListener("change", () => {
-    // TODO CHECK MAP WIDTH VALUES FOR SMALL AND MEDIUM FLOORS
-    setMapSize(radio.value);
-  });
-});
-
 // Brightness debug
 
 let UNKNOWN_THRESHOLD = 37;
@@ -1314,49 +1335,6 @@ visitedSlider.addEventListener("input", () => {
   VISITED_THRESHOLD = Number(visitedSlider.value);
   document.getElementById("visitedValue").innerText = VISITED_THRESHOLD;
 });
-
-function hexToAlt1Color(hex) {
-  hex = hex.replace("#", "");
-
-  const r = parseInt(hex.substring(0, 2), 16);
-  const g = parseInt(hex.substring(2, 4), 16);
-  const b = parseInt(hex.substring(4, 6), 16);
-
-  return (
-    (255 << 24) |
-    (r << 16) |
-    (g << 8) |
-    b
-  );
-}
-
-// COLOR SETTINGS SETTINGS
-let COLOR_KEY_YES = hexToAlt1Color("#33aa33");
-let COLOR_KEY_NO = hexToAlt1Color("#ff0000");
-
-let COLOR_CRIT_TRUE = hexToAlt1Color("#ffd700");
-let COLOR_CRIT_FALSE = hexToAlt1Color("#00bfff");
-
-let SHOW_KEY_OVERLAY = true
-let SHOW_CRIT_OVERLAY = true;
-let SHOW_SCAN_OVERLAY = true;
-let SHOW_PLAYER_HIGHLIGHT = true;
-let SHOW_CORRIDOR_HIGHLIGHT = true;
-let SHOW_GATESTONE_HIGHLIGHT = true;
-
-let goalMinutes = 0
-let goalSeconds = 0
-
-
-document.getElementById("colorKeyYes").addEventListener("input", e => COLOR_KEY_YES = hexToAlt1Color(e.target.value));
-document.getElementById("colorKeyNo").addEventListener("input", e => COLOR_KEY_NO = hexToAlt1Color(e.target.value));
-
-document.getElementById("colorCritTrue").addEventListener("input", e => COLOR_CRIT_TRUE = hexToAlt1Color(e.target.value));
-document.getElementById("colorCritFalse").addEventListener("input", e => COLOR_CRIT_FALSE = hexToAlt1Color(e.target.value));
-
-document.getElementById("showKeyOverlay").addEventListener("change", e => SHOW_KEY_OVERLAY = e.target.checked);
-document.getElementById("showCritOverlay").addEventListener("change", e => SHOW_CRIT_OVERLAY = e.target.checked);
-document.getElementById("showScanOverlay").addEventListener("change", e => SHOW_SCAN_OVERLAY = e.target.checked);
 
 
 document.querySelectorAll(".panel .panel-toggle").forEach(button => {
@@ -1384,121 +1362,142 @@ document.querySelectorAll(".panel .panel-toggle").forEach(button => {
   });
 });
 
+const SETTING_CHANGED_HANDLERS = {
+  floorSize: value => {
+    setMapSize(value);
+  },
 
-document.getElementById("highlightMyLocation").addEventListener("change", e => {
-  SHOW_PLAYER_HIGHLIGHT = e.target.checked;
-  if (SHOW_PLAYER_HIGHLIGHT) {
-    scanPlayerRoom();
-  }
-  else {
-    clearTimeout(timeouts.scanPlayerRoom);
-    clearOverlay(OVERLAYS.player);
-  }
-});
+  highlightMyLocation: value => {
+    if (value) {
+      scanPlayerRoom();
+    }
+    else {
+      clearTimeout(timeouts.scanPlayerRoom);
+      clearOverlay(OVERLAYS.player);
+    }
+  },
 
+  highlightCorridors: value => {
+    if (value) {
+      highlightCorridors();
+    }
+    else {
+      clearTimeout(timeouts.highlightCorridors);
+      clearOverlay(OVERLAYS.corridors);
+    }
+  },
 
-document.getElementById("highlightCorridors").addEventListener("change", e => {
-  SHOW_CORRIDOR_HIGHLIGHT = e.target.checked;
-  if (SHOW_CORRIDOR_HIGHLIGHT) {
-    highlightCorridors();
-  }
-  else {
-    clearTimeout(timeouts.highlightCorridors);
-    clearOverlay(OVERLAYS.corridors);
-  }
-});
+  highlightGatestone: value => {
+    if (value) {
+      highlightGatestone();
+    }
+    else {
+      clearTimeout(timeouts.highlightGatestone);
+      clearOverlay(OVERLAYS.gatestone);
+    }
+  },
 
-
-document.getElementById("highlightGatestone").addEventListener("change", e => {
-  SHOW_GATESTONE_HIGHLIGHT = e.target.checked;
-  if (SHOW_GATESTONE_HIGHLIGHT) {
-    highlightGatestone();
-  }
-  else {
-    clearTimeout(timeouts.highlightGatestone);
-    clearOverlay(OVERLAYS.gatestone);
-  }
-});
-
-
+};
 
 function saveSettings() {
-    const settings = {
-        showKeyOverlay: document.getElementById("showKeyOverlay").checked,
-        showCritOverlay: document.getElementById("showCritOverlay").checked,
-        showScanOverlay: document.getElementById("showScanOverlay").checked,
-        highlightMyLocation: document.getElementById("highlightMyLocation").checked,
-        highlightCorridors: document.getElementById("highlightCorridors").checked,
-        highlightGatestone: document.getElementById("highlightGatestone").checked,
-
-        colorKeyYes: document.getElementById("colorKeyYes").value,
-        colorKeyNo: document.getElementById("colorKeyNo").value,
-        colorCritTrue: document.getElementById("colorCritTrue").value,
-        colorCritFalse: document.getElementById("colorCritFalse").value,
-
-        goalMinutes: document.getElementById("goalMinutes").value,
-        goalSeconds: document.getElementById("goalSeconds").value,
-
-        floorSize: document.querySelector('input[name="floorSize"]:checked')?.value
-    };
-
-    localStorage.setItem("dgmap_settings", JSON.stringify(settings));
+    localStorage.setItem("dgmap_settings", JSON.stringify(SETTINGS));
 }
 
 function loadSettings() {
   console.log('Load settings');
 
-  const settings = JSON.parse(localStorage.getItem("dgmap_settings"));
+  const storedSettings = JSON.parse(localStorage.getItem("dgmap_settings")) || {};
 
-  if (!settings)
+  for (const key in SETTINGS) {
+    const storedValue = storedSettings[key];
+    if (storedValue !== undefined && storedValue !== null)
+      SETTINGS[key] = storedValue;
+
+    const value = SETTINGS[key];
+
+    const controls = document.querySelectorAll(`[data-setting="${key}"]`);
+
+    if (!controls || controls.length === 0)
+      continue;
+
+    if (controls[0].type === "radio") {
+      controls.forEach(control => {
+        control.checked = control.value === value;
+      });
+    }
+    else {
+      const el = controls[0];
+
+      if (el?.type === "checkbox") {
+        el.checked = value;
+      }
+      else if (el?.type === "color") {
+        if (typeof value === "number") {
+          el.value = decimalToHexRGB(value);
+        }
+        else {
+          el.value = value;
+          SETTINGS[key] = hexToDecimalARGB(value);
+        }
+      }
+      else {
+        el.value = SETTINGS[key];
+      }
+    }
+
+    SETTING_CHANGED_HANDLERS[key]?.(SETTINGS[key]);
+  }
+
+  document.querySelectorAll('input[data-setting]').forEach(input => {
+    const key = input.dataset.setting;
+    if (!SETTINGS.hasOwnProperty(key))
       return;
 
-  document.getElementById("showKeyOverlay").checked = settings.showKeyOverlay;
-  document.getElementById("showCritOverlay").checked = settings.showCritOverlay;
-  document.getElementById("showScanOverlay").checked = settings.showScanOverlay;
-  document.getElementById("highlightMyLocation").checked = settings.highlightMyLocation;
-  document.getElementById("highlightCorridors").checked = settings.highlightCorridors;
-  document.getElementById("highlightGatestone").checked = settings.highlightGatestone;
+    let valueAttr, eventName, parseFunc;
+    let value = SETTINGS[key];
 
-  document.getElementById("colorKeyYes").value = settings.colorKeyYes;
-  document.getElementById("colorKeyNo").value = settings.colorKeyNo;
-  document.getElementById("colorCritTrue").value = settings.colorCritTrue;
-  document.getElementById("colorCritFalse").value = settings.colorCritFalse;
+    switch (input.type) {
+      case "color":
+        valueAttr = "value";
+        value = decimalToHexRGB(value);
+        parseFunc = hexToDecimalARGB;
+        break;
+      case "number":
+        valueAttr = "value";
+        parseFunc = Number;
+        break;
+      case "checkbox":
+        valueAttr = "checked";
+        eventName = "change";
+        break;
+      case "radio":
+        eventName = "change";
+        parseFunc = (input) => input.checked ? input.value : SETTINGS[key];
+        input.checked = input.value === value;
+        break;
+    }
 
-  document.getElementById("goalMinutes").value = settings.goalMinutes;
-  document.getElementById("goalSeconds").value = settings.goalSeconds;
+    parseFunc = parseFunc || (v => v);
+    eventName = eventName || "input";
 
-  setMapSize(settings.floorSize);
+    if (valueAttr)
+      input[valueAttr] = value;
 
-  SHOW_KEY_OVERLAY = settings.showKeyOverlay;
-  SHOW_CRIT_OVERLAY = settings.showCritOverlay;
-  SHOW_SCAN_OVERLAY = settings.showScanOverlay;
+    input.addEventListener(eventName, e => {
+      SETTINGS[key] = parseFunc(valueAttr ? input[valueAttr] : input);
+      SETTING_CHANGED_HANDLERS[key]?.(SETTINGS[key]);
 
-  SHOW_PLAYER_HIGHLIGHT = settings.highlightMyLocation;
-  SHOW_CORRIDOR_HIGHLIGHT = settings.highlightCorridors;
-  SHOW_GATESTONE_HIGHLIGHT = settings.highlightGatestone;
+      saveSettings();
+    });
 
-  COLOR_KEY_YES = hexToAlt1Color(settings.colorKeyYes);
-  COLOR_KEY_NO = hexToAlt1Color(settings.colorKeyNo);
-
-  COLOR_CRIT_TRUE = hexToAlt1Color(settings.colorCritTrue);
-  COLOR_CRIT_FALSE = hexToAlt1Color(settings.colorCritFalse);
-
-  goalMinutes = settings.goalMinutes
-  goalSeconds = settings.goalSeconds
-
+    input.removeAttribute("disabled");
+  });
 }
 
 window.addEventListener('beforeunload', () => {
     saveSettings();
     clearAllOverlays();
 });
-
-document
-    .querySelectorAll("input")
-    .forEach(input =>
-        input.addEventListener("change", saveSettings)
-    );
 
 window.addEventListener('load', () => {
   loadSettings();
