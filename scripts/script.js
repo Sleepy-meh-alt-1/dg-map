@@ -88,56 +88,6 @@ function overlay(name, draw, reset = true) {
   alt1.overLaySetGroup(prevOverlay);
 }
 
-window.setTimeout(() => {
-  reader.readargs = {
-    colors: [
-      A1lib.mixColor(255, 255, 255),
-      A1lib.mixColor(0, 255, 0),
-      A1lib.mixColor(30, 255, 0),
-      A1lib.mixColor(45, 186, 20),
-      A1lib.mixColor(255, 203, 5),
-      A1lib.mixColor(30, 255, 0),
-
-      A1lib.mixColor(210, 183, 109), // light brown (floor start config)
-
-      // Key colors
-      A1lib.mixColor(51, 102, 255), // blue
-      A1lib.mixColor(220, 20, 60), // crimson
-      A1lib.mixColor(254, 222, 0), // gold
-      A1lib.mixColor(0, 255, 0), // green
-      A1lib.mixColor(255, 102, 0), // orange
-      A1lib.mixColor(102, 0, 255), // purple
-      A1lib.mixColor(191, 191, 191), // silver
-      A1lib.mixColor(255, 255, 0), // yellow
-    ],
-    backwards: true,
-  };
-  clearAllOverlays();
-  alt1.overLaySetGroup(OVERLAYS.default);
-
-  A1lib.on('alt1pressed', handleAlt1Pressed);
-
-  reader.find();
-
-  const findChat = setInterval(() => {
-    if (reader.pos === null) reader.find();
-    else {
-      clearInterval(findChat);
-      reader.pos.mainbox = reader.pos.boxes[0];
-      showSelectedChat(reader.pos);
-
-      document.getElementById("debugChatStatus").innerText = "Chat: Found";
-      chatInterval = setInterval(() => {
-        readChatbox();
-      }, 200);
-    }
-  }, 1000);
-
-  scanInterface();
-  // scanAnchor();
-
-}, 0);
-
 let partyListOverlayVisibleUntil = 0;
 
 function handleAlt1Pressed(event) {
@@ -432,6 +382,7 @@ async function checkLine(line) {
 }
 
 function startFloor() {
+  console.log('Starting floor');
   clearTimeouts();
   inFloor = true
   dungeonStartTime = Date.now();
@@ -446,6 +397,7 @@ function startFloor() {
 }
 
 function stopFloor() {
+  console.log('Stopping floor');
   clearAllOverlays();
   clearTimeouts();
   scanInterface();
@@ -1488,6 +1440,8 @@ function saveSettings() {
 }
 
 function loadSettings() {
+  console.log('Load settings');
+
   const settings = JSON.parse(localStorage.getItem("dgmap_settings"));
 
   if (!settings)
@@ -1529,8 +1483,6 @@ function loadSettings() {
 
 }
 
-window.addEventListener('load', loadSettings );
-
 window.addEventListener('beforeunload', () => {
     saveSettings();
     clearAllOverlays();
@@ -1542,4 +1494,54 @@ document
         input.addEventListener("change", saveSettings)
     );
 
+window.addEventListener('load', () => {
+  loadSettings();
 
+  reader.readargs = {
+    colors: [
+      A1lib.mixColor(255, 255, 255),
+      A1lib.mixColor(0, 255, 0),
+      A1lib.mixColor(30, 255, 0),
+      A1lib.mixColor(45, 186, 20),
+      A1lib.mixColor(255, 203, 5),
+      A1lib.mixColor(30, 255, 0),
+
+      A1lib.mixColor(210, 183, 109), // light brown (floor start config)
+
+      // Key colors
+      A1lib.mixColor(51, 102, 255), // blue
+      A1lib.mixColor(220, 20, 60), // crimson
+      A1lib.mixColor(254, 222, 0), // gold
+      A1lib.mixColor(0, 255, 0), // green
+      A1lib.mixColor(255, 102, 0), // orange
+      A1lib.mixColor(102, 0, 255), // purple
+      A1lib.mixColor(191, 191, 191), // silver
+      A1lib.mixColor(255, 255, 0), // yellow
+    ],
+    backwards: true,
+  };
+  clearAllOverlays();
+  alt1.overLaySetGroup(OVERLAYS.default);
+
+  A1lib.on('alt1pressed', handleAlt1Pressed);
+
+  reader.find();
+
+  const findChat = setInterval(() => {
+    if (reader.pos === null) reader.find();
+    else {
+      clearInterval(findChat);
+      reader.pos.mainbox = reader.pos.boxes[0];
+      showSelectedChat(reader.pos);
+
+      document.getElementById("debugChatStatus").innerText = "Chat: Found";
+      chatInterval = setInterval(() => {
+        readChatbox();
+      }, 200);
+    }
+  }, 1000);
+
+  scanInterface();
+  // scanAnchor();
+
+});
