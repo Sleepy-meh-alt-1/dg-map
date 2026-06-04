@@ -138,5 +138,40 @@ const ROOMS = [
     icon: "JE1p/yRNaf8kTWn/I0lk/x5BWv8bPFP/MWKE/zFihP8xYoT/MWKE/yRNaf8kTWn/MmaJ/ylUcv8xYoT/MWKE/zFihP8pVHL/MWKE/y1be/8xYoT/MmaJ/zBfgP8pVHL/MWKE/zFihP8rWHb/MWKE/zFihP8pVHL/MmaJ/zFihP8yZon/MWKE/y5egP8pVHL/",
     width: 6,
     height: 6
-  }
+  },
+
+
+  // -------- BOSS
+  {
+    state: "visited",
+    corridors: ["east"],
+    boss: true,
+    icon: "G0Jd/xtCXf8bQl3/G0Jd/xtCXf8YP1r/G0Jd/y1ihf8tYoX/LWKF/x5HZP8kU3P/LWKF/y5miv8FDD3/LWKF/yxfgf8kU3P/LWKF/ylbfP8pW3z/DRlm/wUMPf8tYoX/LWKF/yxfgf8pW3z/Kl6B/w0ZZv8FDD3/LWKF/ylbfP8qXoH/KVt8/y1ihf8JGiL/BQw9/y1ihf8tYoX/LWKF/y1ihf8pW3z/DRlm/wUMPf8tYoX/KVt8/yRTc/8tYoX/KVt8/w==",
+    width: 7,
+    height: 7
+  },
+  {
+    state: "visited",
+    corridors: ["south"],
+    boss: true,
+    icon: "DS1D/wspP/8NLUP/DS1D/wspP/8LKT//GD9a/xg/Wv8YP1r/GD9a/xI1Tf8OMUf/JFNz/yRTc/8fTGn/Hkdk/yxYdv8UOVL/BQw9/y1ihf8tYoX/K2CA/yxYdv8YP1r/BQw9/ylbfP8tYoX/KmCC/yxYdv8eR2T/BQw9/y1ihf8tYoX/LWKF/yxYdv8YP1r/",
+    width: 6,
+    height: 6
+  },
+  {
+    state: "visited",
+    corridors: ["north"],
+    boss: true,
+    icon: "Axwu/wMcLv8DHC7/Axwu/wMcLv8DHC7/Axwu/xtCXf8bQl3/G0Jd/xtCXf8bQl3/G0Jd/xtCXf8kU3P/Hkdk/yRTc/8kU3P/JFNz/yxYdv8eR2T/BQw9/yRTc/8nV3f/G0Rg/x5HZP8sWHb/Hkdk/wUMPf8kU3P/J1d3/xtEYP8eR2T/LFh2/x5HZP8FDD3/JFNz/yRQbP8UOVL/J1d3/yxYdv8eR2T/BQw9/ydXd/8nV3f/J1d3/yRTc/8sWHb/Hkdk/w==",
+    width: 7,
+    height: 7
+  },
+  {
+    state: "visited",
+    corridors: ["west"],
+    boss: true,
+    icon: "FDlS/xQ5Uv8UOVL/FDlS/xQ5Uv8UOVL/Cyk//wUMPf8eR2T/Hkdk/x5HZP8eR2T/GD9a/w4xR/8NGWb/BQw9/y5miv8fTGn/Hkdk/xQ5Uv8OMUf/DRlm/w0ZZv8FDD3/LWKF/yRTc/8UOVL/DS1D/woUV/8NGWb/BQw9/ydXd/8hT23/FDlS/wspP/8JGiL/CRoi/wUMPf8tYoX/JFNz/xQ5Uv8LKT//CRoi/w0ZZv8FDD3/LWKF/yFPbf8YP1r/Cyk//w==",
+    width: 7,
+    height: 7
+  },
 ]

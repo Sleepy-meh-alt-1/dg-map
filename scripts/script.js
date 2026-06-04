@@ -722,10 +722,13 @@ function setRoomState(room) {
   const prevState = room.state;
   room.state = 'unknown';
 
-  const { state, corridors } = ROOMS.find(r => {
+  const { state, corridors, boss } = ROOMS.find(r => {
     const matches = JSON.parse(alt1.bindFindSubImg(bind, r.icon, r.width, 0, 0, room.width, room.height));
     return matches.length > 0;
   }) || {};
+
+  if (boss)
+    console.log('Found boss room at', room.id);
 
   if (state)
     room.state = state;
