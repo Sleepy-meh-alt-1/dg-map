@@ -396,6 +396,7 @@ async function checkLine(line) {
     if (partyStarterMatch) {
       console.log("You are the party leader");
       teamMembersSinceUs = ['Us'];
+      scanInterface();
       return;
     }
 
@@ -408,6 +409,7 @@ async function checkLine(line) {
           playerName :
           `Us (${playerName})`
       );
+      scanInterface();
       return;
     }
   }
@@ -441,6 +443,7 @@ function stopFloor() {
   grid = []
   failedGoal = false;
   teamMembersSinceUs = [];
+  partyListCaptures = [];
   alt1.clearTooltip();
 }
 
