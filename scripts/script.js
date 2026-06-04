@@ -144,9 +144,6 @@ function handleAlt1Pressed(event) {
   // }
   // else
   if (partyListOverlayVisibleUntil > Date.now() || findDgIcon()) {
-    clearOverlay(OVERLAYS.members);
-    partyListOverlayVisibleUntil = Date.now();
-
     for (let i = 0; i < partyListRowBounds.length; i++) {
       const bounds = partyListRowBounds[i];
       if (x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height) {
@@ -166,9 +163,11 @@ function handleAlt1Pressed(event) {
           );
         });
         partyListOverlayVisibleUntil = Date.now() + 1000;
-        break;
+        return;
       }
     }
+    clearOverlay(OVERLAYS.members);
+    partyListOverlayVisibleUntil = Date.now();
   }
   else {
     overlay(OVERLAYS.members, () => {
