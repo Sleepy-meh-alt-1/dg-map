@@ -1419,6 +1419,8 @@ window.addEventListener('load', () => {
 
   reader.find();
 
+  scanMapButton();
+
   const findChat = setInterval(() => {
     if (reader.pos === null) reader.find();
     else {
@@ -1434,6 +1436,5 @@ window.addEventListener('load', () => {
   }, 1000);
 
   scanInterface();
-  scanMapButton();
 
 });
