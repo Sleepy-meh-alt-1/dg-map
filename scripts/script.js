@@ -538,10 +538,19 @@ function buildGrid() {
       rowArray.push({
         row, col,
         x, y,
-        x2: x + roomSize, y2: y + roomSize,
-        width: roomSize, height: roomSize,
-        color: null, key: null, skill: null, state: null, crit: null,
-        up: false, right: false, down: false, left: false,
+        x2: x + roomSize,
+        y2: y + roomSize,
+        width: roomSize,
+        height: roomSize,
+        color: null,
+        key: null,
+        skill: null,
+        state: null,
+        crit: null,
+        north: false,
+        east: false,
+        south: false,
+        west: false,
         player: false
       });
 
@@ -598,10 +607,10 @@ function highlightCorridors() {
       for (let row = 0; row < GRID_HEIGHT; row++) {
         for (let col = 0; col < GRID_WIDTH; col++) {
           const room = grid[row][col];
-          if (room.up)    alt1.overLayRect(0xffff00ff, room.x + Math.round(room.width / 2) - 2, room.y - 4, 4, 4, 5000, 2)
-          if (room.down)  alt1.overLayRect(0xffff00ff, room.x + Math.round(room.width / 2) - 2, room.y + room.height + 2, 4, 4, 5000, 2)
-          if (room.right) alt1.overLayRect(0xffff00ff, room.x + room.width + 2, room.y + Math.round(room.height / 2) - 2, 4, 4, 5000, 2)
-          if (room.left)  alt1.overLayRect(0xffff00ff, room.x - 4, room.y + Math.round(room.height / 2) - 2, 4, 4, 5000, 2)
+          if (room.north) alt1.overLayRect(0xffff00ff, room.x + Math.round(room.width / 2) - 2, room.y - 4, 4, 4, 5000, 2)
+          if (room.south) alt1.overLayRect(0xffff00ff, room.x + Math.round(room.width / 2) - 2, room.y + room.height + 2, 4, 4, 5000, 2)
+          if (room.east)  alt1.overLayRect(0xffff00ff, room.x + room.width + 2, room.y + Math.round(room.height / 2) - 2, 4, 4, 5000, 2)
+          if (room.west)  alt1.overLayRect(0xffff00ff, room.x - 4, room.y + Math.round(room.height / 2) - 2, 4, 4, 5000, 2)
         }
       }
     });
@@ -696,6 +705,12 @@ window.indexedRooms = indexedRooms;
 //   return html;
 // }
 // window.exportDebugLockedRoomCaptures = exportDebugLockedRoomCaptures;
+const ADJACENCE_OFFSETS = {
+  north: [-1, 0],
+  south: [1, 0],
+  east: [0, 1],
+  west: [0, -1],
+}
 
 function setRoomState(room) {
   room.id = `${room.row}:${room.col}`;
@@ -704,67 +719,54 @@ function setRoomState(room) {
   const img = A1lib.capture(room.x, room.y, room.width, room.height);
   const bind = alt1.bindRegion(room.x, room.y, room.width, room.height);
 
-  // Only sample top right corner, avoid icons
-  const sampleSize = 7;
-  const buffer = 2;
-
-  const startX = img.width - buffer - sampleSize;
-  const startY = buffer;
-
-  let total = 0;
-  let count = 0;
-
-  // DEBUG
-  //alt1.overLayRect(ORANGE, room.x + startX, room.y + startY, sampleSize, sampleSize, 400, 1)
-
-  // overlay('debug', () => {
-  //   alt1.overLayRect(0xffff0000, room.x + startX, room.y + startY, sampleSize, sampleSize, 1000, 1)
-  // }, false);
-
-  for (let y = startY; y < startY + sampleSize; y++) {
-    for (let x = startX; x < startX + sampleSize; x++) {
-
-      const idx = (y * img.width + x) * 4;
-
-      const r = img.data[idx];
-      const g = img.data[idx + 1];
-      const b = img.data[idx + 2];
-
-      total += (r + g + b) / 3;
-
-      count++;
-    }
-  }
-
-  const avgBrightness = total / count;
-
-
   const prevState = room.state;
-  // Based on avg brightness, determine the state of the room
-  room.color = ORANGE
-  room.state = "locked"
+  room.state = 'unknown';
 
-  // If it's really dark, set to unknown
-  if (avgBrightness < UNKNOWN_THRESHOLD) {
+  const { state, corridors } = ROOMS.find(r => {
+    const matches = JSON.parse(alt1.bindFindSubImg(bind, r.icon, r.width, 0, 0, room.width, room.height));
+    return matches.length > 0;
+  }) || {};
+
+  if (state)
+    room.state = state;
+
+  if (room.state === "unknown") {
+    knownRooms.delete(room.id);
     if (prevState && prevState !== "unknown") {
-      // console.log('Room', room.id, 'state changed to unknown from', prevState);
+      console.log('Room', room.id, 'state changed from', prevState, 'to unknown');
       unknownRescans.add(room.id);
     }
-    room.color = SETTINGS.colorKeyNo
-    room.state = "unknown"
   }
   else {
+    knownRooms.add(room.id);
+    unknownAdjacents.delete(room.id);
     unknownRescans.delete(room.id);
   }
 
-  // If it's really bright, set to visited
-  if (avgBrightness > VISITED_THRESHOLD) {
-    room.color = SETTINGS.colorKeyYes
-    room.state = "visited"
-  }
 
-  // if the room is locked, check if it's a key door
-  if (room.state === "locked") {
+  if (room.state === "visited") {
+    room.color = SETTINGS.colorKeyYes;
+
+    // alt1.overLayText(corridors.map(c => c[0].toUpperCase()).join(''), 0xffffffff, 10, room.x + 6, room.y + 8, 1000);
+
+    if (corridors?.length) {
+      for (const dir of corridors) {
+        // console.log('Found corridor', dir, 'in room', room.id);
+        room[dir] = true;
+        const [rowOffset, colOffset] = ADJACENCE_OFFSETS[dir];
+        const adjacentRoom = indexedRooms[`${room.row + rowOffset}:${room.col + colOffset}`];
+        if (adjacentRoom?.state === "unknown") {
+          unknownAdjacents.add(adjacentRoom.id);
+          console.log('Found adjacent of', room.id, dir, 'at', adjacentRoom.id)
+        }
+      }
+    }
+
+    if (SETTINGS.highlightCorridors && (room.north || room.east || room.south || room.west))
+      highlightCorridors(room);
+  }
+  else if (room.state === "locked") {
+    room.color = SETTINGS.colorKeyNo;
 
     // debugLockedRoomCaptures.add(
     //   A1lib.encodeImageString(img, 0, 0, img.width, img.height)
@@ -782,7 +784,6 @@ function setRoomState(room) {
       }
     }
 
-    // If we still haven't found a key, check for highlighted keys
     if (room.state !== "key") {
       for (const key of KEY_ICONS) {
         const matches = JSON.parse(alt1.bindFindSubImg(bind, key.icon, key.width, 0, 0, room.width, room.height));
@@ -797,61 +798,6 @@ function setRoomState(room) {
 
           break;
         }
-      }
-    }
-  }
-
-
-  if (room.state === "unknown") {
-    knownRooms.delete(room.id);
-  }
-  else {
-    knownRooms.add(room.id);
-    unknownAdjacents.delete(room.id);
-  }
-
-  // alt1.overLayRect(0xffff0000, room.x - 2, room.y - 2, room.width + 2 * 2, room.height + 2 * 2, 600, 1)
-  if (room.state === "visited") {
-
-    roomWithCorridors = A1lib.capture(room.x - 2, room.y - 2, room.width + 2 * 2, room.height + 2 * 2);
-    room.up = scanEdge(roomWithCorridors, "top");
-    room.right = scanEdge(roomWithCorridors, "right");
-    room.down = scanEdge(roomWithCorridors, "bottom");
-    room.left = scanEdge(roomWithCorridors, "left");
-
-
-    if (SETTINGS.highlightCorridors && (room.up || room.right || room.down || room.left))
-      highlightCorridors(room);
-
-    if (room.up) {
-      const adjacentRoom = indexedRooms[`${room.row - 1}:${room.col}`];
-      if (adjacentRoom?.state === "unknown") {
-        unknownAdjacents.add(adjacentRoom.id);
-        console.log('Found adjacent of', room.id, 'up at', adjacentRoom.id)
-      }
-    }
-
-    if (room.right) {
-      const adjacentRoom = indexedRooms[`${room.row}:${room.col + 1}`];
-      if (adjacentRoom?.state === "unknown") {
-        unknownAdjacents.add(adjacentRoom.id);
-        console.log('Found adjacent of', room.id, 'right at', adjacentRoom.id)
-      }
-    }
-
-    if (room.down) {
-      const adjacentRoom = indexedRooms[`${room.row + 1}:${room.col}`];
-      if (adjacentRoom?.state === "unknown") {
-        unknownAdjacents.add(adjacentRoom.id);
-        console.log('Found adjacent of', room.id, 'down at', adjacentRoom.id)
-      }
-    }
-
-    if (room.left) {
-      const adjacentRoom = indexedRooms[`${room.row}:${room.col - 1}`];
-      if (adjacentRoom?.state === "unknown") {
-        unknownAdjacents.add(adjacentRoom.id);
-        console.log('Found adjacent of', room.id, 'left at', adjacentRoom.id)
       }
     }
   }
@@ -933,53 +879,6 @@ function scanPlayerRoom() {
 
   // console.log(PLAYER_ICONS[playerIndex].name, playerRoom ? `found at ${playerRoom.id}` : 'not found', `in <${Math.ceil((end - start) / 100) * 100} ms`);
   return playerRoom;
-}
-
-// MAYBE DELETE
-function scanEdge(img, side) {
-  const centerX = Math.floor(img.width / 2);
-  const centerY = Math.floor(img.height / 2);
-  const scanRadius = 4;
-  let brightPixels = 0;
-
-  for (let i = -scanRadius; i <= scanRadius; i++) {
-    let x;
-    let y;
-
-    switch (side) {
-      case "top":
-        x = centerX + i;
-        y = 0;
-        break;
-      case "right":
-        x = img.width - 1;
-        y = centerY + i;
-        break;
-      case "bottom":
-        x = centerX + i;
-        y = img.height - 1;
-        break;
-      case "left":
-        x = 0;
-        y = centerY + i;
-        break;
-    }
-
-    const idx = (y * img.width + x) * 4;
-
-    const r = img.data[idx];
-    const g = img.data[idx + 1];
-    const b = img.data[idx + 2];
-
-    const brightness =
-      (r + g + b) / 3;
-
-    if (brightness > 25) {
-      brightPixels++;
-    }
-  }
-
-  return brightPixels >= 2;
 }
 
 function findDgIcon() {
@@ -1101,7 +1000,7 @@ function showStats() {
       }
 
       // count exits
-      const exits = (room.up ? 1 : 0) + (room.right ? 1 : 0) + (room.down ? 1 : 0) + (room.left ? 1 : 0);
+      const exits = Number(!!room.north) + Number(!!room.east) + Number(!!room.south) + Number(!!room.west);
 
       if (room.state === "visited") {
         if (exits === 1) {
@@ -1284,10 +1183,10 @@ function scanAdjacentSkillDoors(skill) {
   const matchesFound = [];
 
   const directions = [
-    ["up", -1, 0],
-    ["right", 0, 1],
-    ["down", 1, 0],
-    ["left", 0, -1]
+    ["north", -1, 0],
+    ["east", 0, 1],
+    ["south", 1, 0],
+    ["west", 0, -1]
   ];
 
   for (const [dir, dr, dc] of directions) {
@@ -1323,24 +1222,6 @@ function scanAdjacentSkillDoors(skill) {
 /*
 GUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 */
-
-// Brightness debug
-
-let UNKNOWN_THRESHOLD = 37;
-let VISITED_THRESHOLD = 62;
-
-const unknownSlider = document.getElementById("unknownSlider");
-const visitedSlider = document.getElementById("visitedSlider");
-
-unknownSlider.addEventListener("input", () => {
-  UNKNOWN_THRESHOLD = Number(unknownSlider.value);
-  document.getElementById("unknownValue").innerText = UNKNOWN_THRESHOLD;
-});
-
-visitedSlider.addEventListener("input", () => {
-  VISITED_THRESHOLD = Number(visitedSlider.value);
-  document.getElementById("visitedValue").innerText = VISITED_THRESHOLD;
-});
 
 
 document.querySelectorAll(".panel .panel-toggle").forEach(button => {
