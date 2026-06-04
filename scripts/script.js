@@ -415,6 +415,7 @@ async function checkLine(line) {
 
 function startFloor() {
   console.log('Starting floor');
+  clearAllOverlays();
   clearTimeouts();
   inFloor = true
   dungeonStartTime = Date.now();
