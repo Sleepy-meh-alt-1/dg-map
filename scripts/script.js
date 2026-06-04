@@ -368,21 +368,21 @@ async function checkLine(line) {
   if (partySizeMatch) {
     startFloor();
 
-    if (!partySizeMatch)
-      return;
+    if (teamMembersSinceUs.length > 0) {
+      const size = parseInt(partySizeMatch[1], 10);
+      playerIndex = size - teamMembersSinceUs.length;
+      console.log(`We're player ${playerIndex + 1} of ${size}`);
+      for (let i = 0; i < size; i++) {
+        const color = TEAM_MEMBER_COLORS[i];
+        const displayName = i < playerIndex ?
+          `Unknown${i + 1}` :
+          teamMembersSinceUs[i - playerIndex] || 'Unknown';
+        console.log(`%c ${displayName} `, `color: white; background-color: rgb(${color[0]}, ${color[1]}, ${color[2]}); padding: 2px 10px; border-radius: 5px;`);
+      }
 
-    const size = parseInt(partySizeMatch[1], 10);
-    playerIndex = size - teamMembersSinceUs.length;
-    console.log(size, playerIndex);
-    for (let i = 0; i < size; i++) {
-      const color = TEAM_MEMBER_COLORS[i];
-      const displayName = i < playerIndex ?
-        `Unknown${i + 1}` :
-        teamMembersSinceUs[i - playerIndex] || 'Unknown';
-      console.log(`%c ${displayName} `, `color: white; background-color: rgb(${color[0]}, ${color[1]}, ${color[2]}); padding: 2px 10px; border-radius: 5px;`);
+      teamMembersSinceUs = [];
     }
 
-    teamMembersSinceUs = [];
     return;
   }
 
@@ -439,6 +439,7 @@ function stopFloor() {
   myKeys = new Set();
   grid = []
   failedGoal = false;
+  teamMembersSinceUs = [];
   alt1.clearTooltip();
 }
 
