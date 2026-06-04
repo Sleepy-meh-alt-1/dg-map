@@ -124,7 +124,7 @@ let partyListOverlayVisibleUntil = 0;
 function handleAlt1Pressed(event) {
   console.log('alt1pressed', event)
 
-  if (!inFloor && findAnchor())
+  if (!inFloor && findMapButton())
     startFloor();
 
   const { x, y } = event;
