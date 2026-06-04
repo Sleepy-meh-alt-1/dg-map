@@ -129,20 +129,21 @@ function handleAlt1Pressed(event) {
 
   const { x, y } = event;
 
-  if (x >= mapX && x <= mapX + mapWidth && y >= mapY && y <= mapY + mapHeight) {
-    console.log('Map clicked at', x, y);
-    for (let i = 0; i < PLAYER_ICONS.length; i++) {
-      const icon = PLAYER_ICONS[i];
-      const bind = alt1.bindRegion(x - 10, y - 10, 20, 20);
-      const matches = JSON.parse(alt1.bindFindSubImg(bind, icon.icon, icon.width, 0, 0, 20, 20));
-      if (matches.length > 0) {
-        console.log('Selected player index', i);
-        playerIndex = i;
-      }
-      break;
-    }
-  }
-  else if (partyListOverlayVisibleUntil > Date.now() || findDgIcon()) {
+  // if (x >= mapX && x <= mapX + mapWidth && y >= mapY && y <= mapY + mapHeight) {
+  //   console.log('Map clicked at', x, y);
+  //   for (let i = 0; i < PLAYER_ICONS.length; i++) {
+  //     const icon = PLAYER_ICONS[i];
+  //     const bind = alt1.bindRegion(x - 10, y - 10, 20, 20);
+  //     const matches = JSON.parse(alt1.bindFindSubImg(bind, icon.icon, icon.width, 0, 0, 20, 20));
+  //     if (matches.length > 0) {
+  //       console.log('Selected player index', i);
+  //       playerIndex = i;
+  //     }
+  //     break;
+  //   }
+  // }
+  // else
+  if (partyListOverlayVisibleUntil > Date.now() || findDgIcon()) {
     clearOverlay(OVERLAYS.members);
     partyListOverlayVisibleUntil = Date.now();
 
