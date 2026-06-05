@@ -40,6 +40,7 @@ const timeouts = {
 
 let teamMembersSinceUs = [];
 let playerIndex = 0;
+let partySize = null;
 let gatestone1Location = null;
 let dungeonStartTime = null;
 let inFloor = false;
@@ -365,13 +366,11 @@ async function checkLine(line) {
 
   const partySizeMatch = line.match(/Party Size:.*(\d):\d/);
   if (partySizeMatch) {
-    startFloor();
-
     if (teamMembersSinceUs.length > 0) {
-      const size = parseInt(partySizeMatch[1], 10);
-      playerIndex = size - teamMembersSinceUs.length;
-      console.log(`We're player ${playerIndex + 1} of ${size}`);
-      for (let i = 0; i < size; i++) {
+      partySize = parseInt(partySizeMatch[1], 10);
+      playerIndex = partySize - teamMembersSinceUs.length;
+      console.log(`We're player ${playerIndex + 1} of ${partySize}`);
+      for (let i = 0; i < partySize; i++) {
         const color = TEAM_MEMBER_COLORS[i];
         const displayName = i < playerIndex ?
           `Unknown${i + 1}` :
@@ -381,6 +380,8 @@ async function checkLine(line) {
 
       teamMembersSinceUs = [];
     }
+
+    startFloor();
 
     return;
   }
@@ -421,6 +422,7 @@ function startFloor() {
   inFloor = true
   dungeonStartTime = Date.now();
   playerIndex = playerIndex || 0;
+  partySize = partySize || 1;
   gatestone1Location = null;
   myKeys = new Set();
   failedGoal = false;
@@ -440,6 +442,9 @@ function stopFloor() {
   inFloor = false
   myKeys = new Set();
   grid = []
+  playerIndex = 0;
+  partySize = null;
+  gatestone1Location = null;
   failedGoal = false;
   teamMembersSinceUs = [];
   partyListCaptures = [];
