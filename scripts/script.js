@@ -459,6 +459,10 @@ function stopFloor() {
   inFloor = false
   myKeys = new Set();
   grid = []
+  indexedRooms = {};
+  knownRooms = new Set();
+  unknownAdjacents = new Set();
+  unknownRescans = new Set();
   playerIndex = 0;
   partySize = null;
   gatestone1Location = null;
