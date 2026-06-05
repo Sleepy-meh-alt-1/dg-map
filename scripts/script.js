@@ -520,8 +520,8 @@ function buildGrid() {
   const roomSize = 29;
   const gap = 3;
 
-  // alt1.overLayText("MAP", 0xffffffff, 20, Math.floor(mapX + mapWidth / 2) - 40, mapY - 40, 3000);
-  // alt1.overLayRect(0xffff0000, mapX, mapY, mapWidth, mapWidth, 5000, 1);
+  alt1.overLayText("MAP", appColor, 20, Math.floor(mapX + mapWidth / 2) - 40, mapY - 40, 3000);
+  alt1.overLayRect(appColor, mapX, mapY, mapWidth, mapWidth, 3000, 1);
   // alt1.overLayRect(0xffff0000, mapX + mapPadding, mapY + mapPadding, mapWidth - 2 * mapPadding, mapWidth - 2 * mapPadding, 5000, 1);
 
   grid = [];
