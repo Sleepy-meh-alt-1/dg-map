@@ -75,6 +75,7 @@ const OVERLAYS = {
   corridors: 'corridors',
   gatestone: 'gatestone',
   debug: 'debug',
+  debugMap: 'debugMap',
 }
 const currentOverlay = OVERLAYS.default;
 const renderedOverlays = new Set();
@@ -494,7 +495,35 @@ function scanMapButton() {
 function findAnchor() {
   const rsBind = alt1.bindRegion(0, 0, alt1.rsWidth, alt1.rsHeight);
   const matches = JSON.parse(alt1.bindFindSubImg(rsBind, ANCHOR_ICON.icon, ANCHOR_ICON.width, 0, 0, alt1.rsWidth, alt1.rsHeight));
-  return matches[0];
+  for (const anchor of matches) {
+    console.log(`Anchor found at {${anchor.x}, ${anchor.y}} – verifying...`);
+
+    overlay(OVERLAYS.debugMap, () => {
+      alt1.overLayRect(appColor, anchor.x, anchor.y, ANCHOR_ICON.width, ANCHOR_ICON.height, 600, 2);
+      alt1.overLayRect(appColor, anchor.x - mapWidth + ANCHOR_ICON.width, anchor.y, mapWidth, mapHeight, 600, 2);
+    });
+
+    // Verify match by checking assumed map for a locked room
+    const mapBind = alt1.bindRegion(anchor.x - mapWidth + ANCHOR_ICON.width, anchor.y, mapWidth, mapHeight);
+    for (const r of ROOMS) {
+      const matches = JSON.parse(alt1.bindFindSubImg(mapBind, r.icon, r.width, 0, 0, mapWidth, mapHeight));
+      const roomMatch = matches[0];
+      if (roomMatch) {
+        overlay(OVERLAYS.debugMap, () => {
+          alt1.overLayRect(appColor, roomMatch.x, roomMatch.y, r.width, r.height, 600, 2);
+        }, false);
+
+        return anchor;
+      }
+    }
+
+    overlay(OVERLAYS.debugMap, () => {
+      alt1.overLayRect(0xffff0000, anchor.x - mapWidth + ANCHOR_ICON.width, anchor.y, mapWidth, mapHeight, 600, 2);
+    });
+    console.log('Anchor found was a false positive, retrying...');
+  }
+
+  return null;
 }
 
 function setMapSize(floorSize) {
@@ -549,8 +578,8 @@ function buildGrid() {
   const roomSize = 29;
   const gap = 3;
 
-  alt1.overLayText("MAP", appColor, 20, Math.floor(mapX + mapWidth / 2) - 40, mapY - 40, 3000);
-  alt1.overLayRect(appColor, mapX, mapY, mapWidth, mapWidth, 3000, 1);
+  alt1.overLayText("MAP", appColor, 20, Math.floor(mapX + mapWidth / 2) - 40, mapY - 40, 1000);
+  alt1.overLayRect(appColor, mapX, mapY, mapWidth, mapHeight, 1000, 1);
   // alt1.overLayRect(0xffff0000, mapX + mapPadding, mapY + mapPadding, mapWidth - 2 * mapPadding, mapWidth - 2 * mapPadding, 5000, 1);
 
   grid = [];
