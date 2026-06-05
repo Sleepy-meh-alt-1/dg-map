@@ -1060,7 +1060,6 @@ function showStats() {
     for (let col = 0; col < GRID_WIDTH; col++) {
       const room = grid[row][col];
 
-      unreachable += Number(!!room.unreachable);
       // count states
       switch (room.state) {
         case "visited":
@@ -1074,6 +1073,9 @@ function showStats() {
           break;
         case "key":
           keys++;
+          break;
+        case "unreachable":
+          unreachable++;
           break;
       }
 
@@ -1228,15 +1230,18 @@ function getUnreachableRooms() {
     }
   }
 
+  let unreachable = 0;
   for (let row = 0; row < GRID_HEIGHT; row++) {
     for (let col = 0; col < GRID_WIDTH; col++) {
       const room = fakeGrid[row][col];
 
-      grid[row][col].unreachable = (room.state === "unknown");
+      if (room.state === "unknown") {
+        grid[row][col].state = "unreachable"
 
-      // debug overlay
-      //alt1.overLayRect(0xffff00ff, room.x, room.y, room.width, room.height, 200, 1);
+        // debug overlay
+        //alt1.overLayRect(0xffff00ff, room.x, room.y, room.width, room.height, 200, 1);
 
+      }
     }
   }
 
@@ -1313,10 +1318,9 @@ function updateDebugOverlays() {
         case 'locked': color = 0xffee6f00; inset = 3; break;
         case 'key': color = room.color; break;
         case 'unknown': color = 0xffff00ff; break;
+        case 'unreachable': color = 0xff0000ff; break;
       }
       alt1.overLayRect(color, room.x + inset, room.y + inset, room.width - 2 * inset, room.height - 2 * inset, 600, 1);
-      if (room.unreachable)
-        alt1.overLayRect(0xff0000ff, room.x + 8, room.y + 8, room.width - 2 * 8, room.height - 2 * 8, 600, 1);
     }
 
   });
