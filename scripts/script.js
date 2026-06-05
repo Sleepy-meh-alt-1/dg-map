@@ -25,7 +25,21 @@ const SETTINGS = {
 
   floorSize: "large",
 
+  debug: false,
+
 };
+
+const DEBUG = {
+  settings: SETTINGS,
+  scanDungeonMapFullCount: 0,
+  scanDungeonMapFullAt: null,
+  scanDungeonMapFullTime: 0,
+  scanDungeonMapPartialCount: 0,
+  scanDungeonMapPartialAt: null,
+  scanDungeonMapPartialTime: 0,
+  lastStartBy: null,
+}
+window.DEBUG = DEBUG;
 
 let chatInterval = null;
 
@@ -46,7 +60,7 @@ let dungeonStartTime = null;
 let inFloor = false;
 let myKeys;
 let GRID_WIDTH = 8, GRID_HEIGHT = 8, grid, mapWidth = 280, mapHeight = 280;
-let mapX, mapY;
+let mapX = 0, mapY = 0;
 
 let failedGoal = false;
 
@@ -60,6 +74,7 @@ const OVERLAYS = {
   player: 'player',
   corridors: 'corridors',
   gatestone: 'gatestone',
+  debug: 'debug',
 }
 const currentOverlay = OVERLAYS.default;
 const renderedOverlays = new Set();
@@ -125,8 +140,10 @@ let partyListOverlayVisibleUntil = 0;
 function handleAlt1Pressed(event) {
   console.log('alt1pressed', event)
 
-  if (!inFloor && findMapButton())
+  if (!inFloor && findMapButton()) {
+    DEBUG.lastStartBy = "alt1Pressed";
     startFloor();
+  }
 
   const { x, y } = event;
 
@@ -267,7 +284,6 @@ async function checkLine(line) {
   if (lastLines.length > 11) {
     lastLines.pop();
   }
-  document.getElementById("debugChatStatus").innerText = lastLines.join("\n");
 
 
   const keyMatch = line.match(/Your party (found|used) a key: (\w+) (\w+) key/i);
@@ -381,6 +397,7 @@ async function checkLine(line) {
       teamMembersSinceUs = [];
     }
 
+    DEBUG.lastStartBy = "partySizeLine";
     startFloor();
 
     return;
@@ -465,6 +482,7 @@ function scanMapButton() {
     //   alt1.overLayRect(appColor, location.x - 3, location.y - 14, 22, 21, 2000, 2);
     // });
 
+    DEBUG.lastStartBy = "scanMapButton";
     startFloor();
   }
 }
@@ -498,6 +516,8 @@ function setMapSize(floorSize) {
   console.log('Map size:', floorSize);
   SETTINGS.floorSize = floorSize;
   saveSettings();
+  updateDebugStats();
+  updateDebugOverlays();
 
   const radio = document.querySelector(`input[data-setting="floorSize"][value="${floorSize}"]`);
   radio.checked = true;
@@ -601,6 +621,11 @@ function scanDungeonMapFull() {
 
   document.getElementById("statScanTime").innerText = Math.round(end - start);
 
+  DEBUG.scanDungeonMapFullCount++;
+  DEBUG.scanDungeonMapFullAt = new Date();
+  DEBUG.scanDungeonMapFullTime = Math.round(end - start);
+  updateDebugStats();
+
   timeouts.scanDungeonMap = setTimeout(scanDungeonMapPartial, 1000);
 }
 
@@ -684,6 +709,12 @@ function scanDungeonMapPartial() {
 
   document.getElementById("statScanTime").innerText = Math.round(end - start);
 
+  DEBUG.scanDungeonMapPartialCount++;
+  DEBUG.scanDungeonMapPartialAt = new Date();
+  DEBUG.scanDungeonMapPartialTime = Math.round(end - start);
+  updateDebugStats();
+  updateDebugOverlays();
+
   timeouts.scanDungeonMap = setTimeout(scanDungeonMapPartial, 50);
 }
 window.grid = grid;
@@ -737,6 +768,13 @@ function setRoomState(room) {
 
   if (state)
     room.state = state;
+
+  // if (SETTINGS.debug) {
+  //   if (state)
+  //     console.log('Scanned', room.id, 'and found', state, 'room with corridors', corridors);
+  //   else
+  //     console.log('Scanned', room.id, 'but found nothing');
+  // }
 
   if (room.state === "unknown") {
     knownRooms.delete(room.id);
@@ -809,6 +847,7 @@ function setRoomState(room) {
       }
     }
   }
+  updateDebugStats();
 }
 
 function highlightGatestone() {
@@ -1226,11 +1265,60 @@ function scanAdjacentSkillDoors(skill) {
   return matchesFound;
 }
 
+function updateDebugOverlays() {
+  if (!SETTINGS.debug) return;
+
+  overlay(OVERLAYS.debug, () => {
+    showSelectedChat(reader.pos);
+    alt1.overLayRect(0xffff00ff, mapX, mapY, mapWidth, mapHeight, 1000, 5);
+
+    for (let i = 0; i < partyListRowBounds.length; i++) {
+      const bounds = partyListRowBounds[i];
+      alt1.overLayRect(0xffff00ff, bounds.x, bounds.y, bounds.width, bounds.height, 1000, i === playerIndex ? 3 : 1);
+    }
+
+    for (const roomId in indexedRooms) {
+      const room = indexedRooms[roomId];
+      let color = 0xffffffff, inset = 0;
+      switch (room.state) {
+        case 'visited': color = 0xff00ff00; inset = 3; break;
+        case 'locked': color = 0xffee6f00; inset = 3; break;
+        case 'key': color = room.color; break;
+        case 'unknown': color = 0xffff00ff; break;
+        case 'unreachable': color = 0xff0000ff; break;
+      }
+      alt1.overLayRect(color, room.x + inset, room.y + inset, room.width - 2 * inset, room.height - 2 * inset, 600, 1);
+    }
+
+  });
+}
 
 /*
 GUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUUIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIIII
 */
 
+function updateDebugStats() {
+  if (!SETTINGS.debug) return;
+
+  document.getElementById("debugScanDungeonMapFullCount").innerText = DEBUG.scanDungeonMapFullCount || '-';
+  document.getElementById("debugScanDungeonMapFullAt").innerText = DEBUG.scanDungeonMapFullAt ? DEBUG.scanDungeonMapFullAt.toISOString().split('T')[1] : '-';
+  document.getElementById("debugScanDungeonMapFullTime").innerText = (DEBUG.scanDungeonMapFullTime || '-') + ' ms';
+
+  document.getElementById("debugScanDungeonMapPartialCount").innerText = DEBUG.scanDungeonMapPartialCount || '-';
+  document.getElementById("debugScanDungeonMapPartialAt").innerText = DEBUG.scanDungeonMapPartialAt ? DEBUG.scanDungeonMapPartialAt.toISOString().split('T')[1] : '-';
+  document.getElementById("debugScanDungeonMapPartialTime").innerText = (DEBUG.scanDungeonMapPartialTime || '-') + ' ms';
+
+  document.getElementById("debugPlayerIndex").innerText = playerIndex !== null ? playerIndex : '-';
+  document.getElementById("debugPartySize").innerText = partySize !== null ? partySize : '-';
+  document.getElementById("debugFloorSize").innerText = SETTINGS.floorSize || '-';
+
+  document.getElementById("debugInFloor").innerText = inFloor;
+  document.getElementById("debugGridSize").innerText = grid?.[0] ? grid.length * grid[0].length : '-';
+  document.getElementById("debugKnownRooms").innerText = knownRooms ? knownRooms.size : '-';
+  document.getElementById("debugLastStartBy").innerText = DEBUG.lastStartBy || '-';
+
+  document.getElementById("debugChatStatus").innerText = lastLines.join("\n");
+}
 
 document.querySelectorAll(".panel .panel-toggle").forEach(button => {
   const panel = button.closest(".panel");
@@ -1258,6 +1346,15 @@ document.querySelectorAll(".panel .panel-toggle").forEach(button => {
 });
 
 const SETTING_CHANGED_HANDLERS = {
+
+  debug: value => {
+    if (!value) {
+      clearOverlay(OVERLAYS.debug);
+    }
+
+    document.querySelector('[data-setting="debug"]').closest('.panel').classList.toggle('open', value);
+  },
+
   floorSize: value => {
     setMapSize(value);
   },
@@ -1439,6 +1536,8 @@ window.addEventListener('load', () => {
       document.getElementById("debugChatStatus").innerText = "Chat: Found";
       chatInterval = setInterval(() => {
         readChatbox();
+        updateDebugStats();
+        updateDebugOverlays();
       }, 200);
     }
   }, 1000);

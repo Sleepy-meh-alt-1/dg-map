@@ -145,6 +145,7 @@
       <label>Highlight My Location <input type="checkbox" data-setting="highlightMyLocation" disabled></label>
       <label>Highlight Corridors <input type="checkbox" data-setting="highlightCorridors" disabled></label>
       <label>Highlight Gatestone1 <input type="checkbox" data-setting="highlightGatestone" disabled></label>
+
       <label>Key Door (Have Key) <input type="color" data-setting="colorKeyYes" disabled></label>
       <label>Key Door (No Key) <input type="color" data-setting="colorKeyNo" disabled></label>
       <label>Crit Path True <input type="color" data-setting="colorCritTrue" disabled></label>
@@ -174,11 +175,27 @@
 
   <div class="panel" data-panel-key="debug">
     <div class="panel-title">
-      <span>DEBUG</span>
+      <span>DEBUG <input type="checkbox" data-setting="debug" disabled></span>
       <span>Scan Time: <span id="statScanTime">-</span> ms</span>
-      <button class="panel-toggle"></button>
     </div>
     <div class="panel-content">
+      <label>Full scans: <span id="debugScanDungeonMapFullCount">-</span></label>
+      <label>Full scan at: <span id="debugScanDungeonMapFullAt">-</span></label>
+      <label>Full scan time: <span id="debugScanDungeonMapFullTime">-</span></label>
+      <hr style="margin: 1px">
+      <label>Partial scans: <span id="debugScanDungeonMapPartialCount">-</span></label>
+      <label>Partial scan at: <span id="debugScanDungeonMapPartialAt">-</span></label>
+      <label>Partial scan time: <span id="debugScanDungeonMapPartialTime">-</span></label>
+      <hr style="margin: 1px">
+      <label>Player index: <span id="debugPlayerIndex">-</span></label>
+      <label>Party size: <span id="debugPartySize">-</span></label>
+      <label>Floor size: <span id="debugFloorSize">-</span></label>
+      <hr style="margin: 1px">
+      <label>In floor: <span id="debugInFloor">-</span></label>
+      <label>Grid size: <span id="debugGridSize">-</span></label>
+      <label>Known rooms: <span id="debugKnownRooms">-</span></label>
+      <label>Last start by: <span id="debugLastStartBy">-</span></label>
+      <hr>
       <div id="debugChatStatus" style="white-space: pre-line;">Chatbox Searching...</div>
     </div>
   </div>
