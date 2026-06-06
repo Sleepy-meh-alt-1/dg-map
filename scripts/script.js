@@ -50,6 +50,7 @@ const timeouts = {
   buildGrid: null,
   highlightCorridors: null,
   highlightGatestone: null,
+  clearRiddleTooltip: null,
 }
 
 let teamMembersSinceUs = [];
@@ -342,6 +343,14 @@ async function checkLine(line) {
         grid[playerRoom.row][playerRoom.col].crit = false;
       }
     }
+    return;
+  }
+
+  const riddleMatch = RIDDLES.find(r => line.toLowerCase().includes(r.search));
+  if (riddleMatch) {
+    console.log(`Riddle found: ${riddleMatch.item}`);
+    alt1.setTooltip(riddleMatch.item);
+    timeouts.clearRiddleTooltip = setTimeout(alt1.clearTooltip, 5000);
     return;
   }
 
