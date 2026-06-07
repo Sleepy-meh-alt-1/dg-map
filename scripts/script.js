@@ -527,13 +527,15 @@ function findAnchor() {
     });
 
     // Verify match by checking assumed map for a locked room
-    const mapBind = alt1.bindRegion(anchor.x - mapWidth + ANCHOR_ICON.width, anchor.y, mapWidth, mapHeight);
+    const x = anchor.x - mapWidth + ANCHOR_ICON.width;
+    const y = anchor.y;
+    const bind = alt1.bindRegion(x, y, mapWidth, mapHeight);
     for (const r of ROOMS) {
-      const matches = JSON.parse(alt1.bindFindSubImg(mapBind, r.icon, r.width, 0, 0, mapWidth, mapHeight));
+      const matches = JSON.parse(alt1.bindFindSubImg(bind, r.icon, r.width, 0, 0, mapWidth, mapHeight));
       const roomMatch = matches[0];
       if (roomMatch) {
         overlay(OVERLAYS.debugMap, () => {
-          alt1.overLayRect(appColor, roomMatch.x, roomMatch.y, r.width, r.height, 600, 2);
+          alt1.overLayRect(appColor, x + roomMatch.x, y + roomMatch.y, r.width, r.height, 600, Math.ceil(r.width / 2));
         }, false);
 
         return anchor;
@@ -541,7 +543,7 @@ function findAnchor() {
     }
 
     overlay(OVERLAYS.debugMap, () => {
-      alt1.overLayRect(0xffff0000, anchor.x - mapWidth + ANCHOR_ICON.width, anchor.y, mapWidth, mapHeight, 600, 2);
+      alt1.overLayRect(0xffff0000, x, y, mapWidth, mapHeight, 600, 2);
     });
     console.log('Anchor found was a false positive, retrying...');
   }
