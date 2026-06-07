@@ -50,7 +50,7 @@ const timeouts = {
   buildGrid: null,
   highlightCorridors: null,
   highlightGatestone: null,
-  clearRiddleTooltip: null,
+  clearTooltip: null,
 }
 
 let teamMembersSinceUs = [];
@@ -135,6 +135,12 @@ function overlay(name, draw, reset = true) {
   draw();
   alt1.overLayRefreshGroup(name);
   alt1.overLaySetGroup(prevOverlay);
+}
+
+function setTooltip(text, duration = 5000) {
+  clearTimeout(timeouts.clearTooltip);
+  alt1.setTooltip(text);
+  timeouts.clearTooltip = setTimeout(alt1.clearTooltip, duration);
 }
 
 let partyListOverlayVisibleUntil = 0;
@@ -346,14 +352,6 @@ async function checkLine(line) {
     return;
   }
 
-  const riddleMatch = RIDDLES.find(r => line.toLowerCase().includes(r.search));
-  if (riddleMatch) {
-    console.log(`Riddle found: ${riddleMatch.item}`);
-    alt1.setTooltip(riddleMatch.item);
-    timeouts.clearRiddleTooltip = setTimeout(alt1.clearTooltip, 5000);
-    return;
-  }
-
   const gatestoneMatch = line.match(/You (create|place) (?:a|the) gatestone( 2)?\./i);
   if (gatestoneMatch) {
     const action = gatestoneMatch[1].toLowerCase();
@@ -380,6 +378,22 @@ async function checkLine(line) {
       gatestone1Location = null;
       clearOverlay(OVERLAYS.gatestone);
     }
+    return;
+  }
+
+  const riddleMatch = RIDDLES.find(r => line.toLowerCase().includes(r.search));
+  if (riddleMatch) {
+    console.log(`Riddle found: ${riddleMatch.item}`);
+    setTooltip(riddleMatch.item);
+    return;
+  }
+
+  const sarcophagusMatch = line.match(/posthumously honoured with the discovery of (\w+)/i);
+  if (sarcophagusMatch) {
+    const herb = sarcophagusMatch[1];
+    const title = SARCOPHAGUS[herb];
+    console.log('Sarcophagus: ', herb);
+    setTooltip(title);
     return;
   }
 
@@ -1147,7 +1161,7 @@ function showStats() {
 
     if (!failedGoal && elapsedSeconds > TARGET_TIME_SECONDS && TARGET_TIME_SECONDS > 0) {
       failedGoal = true;
-      alt1.setTooltip("Too slow");
+      setTooltip("Too slow");
     }
   }
 
