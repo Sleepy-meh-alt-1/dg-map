@@ -884,6 +884,9 @@ function setRoomState(room) {
 
         myKeys.add(key.name.toLowerCase());
         room.color = SETTINGS.colorKeyYes
+
+        if (prevState !== "key")
+          console.log(`Key scan: highlighted ${key.name} @ ${room.id} (owned)`);
         break;
       }
     }
@@ -895,11 +898,17 @@ function setRoomState(room) {
 
         // if we have the key, set the color to green, oterwise set to red
         if (match) {
+          const owned = myKeys.has(key.name.toLowerCase());
           room.state = "key"
-          room.color = myKeys.has(key.name.toLowerCase()) ?
+          room.color = owned ?
             SETTINGS.colorKeyYes :
             SETTINGS.colorKeyNo
-
+          if (prevState !== "key") {
+            if (owned)
+              console.warn(`Key scan: plain ${key.name} @ ${room.id} (owned) - HL scan miss?`);
+            else
+              console.log(`Key scan: plain ${key.name} @ ${room.id} (not owned)`);
+          }
           break;
         }
       }
@@ -1347,6 +1356,11 @@ function updateDebugOverlays() {
       }
       alt1.overLayRect(color, room.x + inset, room.y + inset, room.width - 2 * inset, room.height - 2 * inset, 600, 1);
     }
+
+
+    // KEY_HL_ICONS.forEach((key, i) => {
+    //   alt1.overLayImage(Math.round(alt1.rsWidth*.5) + (i % 8) * (15 + 2), Math.round(alt1.rsHeight*.4) + 6 + Math.floor(i / 8) * (25 + 2), key.icon, key.width, 3000);
+    // });
 
   });
 }
