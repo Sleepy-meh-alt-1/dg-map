@@ -70,6 +70,13 @@ const GATESTONE_1_HL = {
   height: 19,
 }
 
+const COMPASS = {
+  name: "Minimap Compass",
+  icon: "B0tq/wlefv8OZY7/DmWO/w5ljv8OZY7/DmWO/w5ljv8OZY7/DmWO/wlefv8JXn7/B0xq/zFEU/8fOUv/DUBM/wpHZf8HTGr/Bk2D/wlefv8GTYP/B0xq/wpJZf8NQU3/IT1P/zdNXP8wQ1L/M0dV/zNHVf80SVb/NElW/zRKWP82S1r/Nkta/zZLW/83TVz/N01c/zdOXv82S1r/Hyw1/yExOv8jND//KjlG/zFDUf80R1X/Nk1b/zRKV/8xRVL/KTxG/yQ0P/8fLjj/Gyoz/w==",
+  width: 13,
+  height: 4
+}
+
 
 const SKILL_ICONS = [
   {

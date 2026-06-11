@@ -84,6 +84,9 @@
       align-items: center;
       gap: 10px;
     }
+    .panel-content label input[type="range"] {
+      flex: 1;
+    }
 
     .radio-group {
       display: flex;
@@ -145,12 +148,29 @@
       <label>Highlight My Location <input type="checkbox" data-setting="highlightMyLocation" disabled></label>
       <label>Highlight Corridors <input type="checkbox" data-setting="highlightCorridors" disabled></label>
       <label>Highlight Gatestone1 <input type="checkbox" data-setting="highlightGatestone" disabled></label>
+      <label>Show Camera Angle <input type="checkbox" data-setting="showCameraAngle" disabled></label>
+
+      <label title="Toggle party list overlay (5s) when alt1 keybind is pressed, unless DG interface is already open">
+        Alt+1 toggles party list
+        <input type="checkbox" data-setting="alt1TogglePartyOverlay" disabled>
+      </label>
+      <label title="Toggle HUD visibility when alt1 keybind is pressed">
+        Alt+1 toggles HUD
+        <input type="checkbox" data-setting="alt1ToggleHUD" disabled>
+      </label>
 
       <label>Key Door (Have Key) <input type="color" data-setting="colorKeyYes" disabled></label>
       <label>Key Door (No Key) <input type="color" data-setting="colorKeyNo" disabled></label>
       <label>Crit Path True <input type="color" data-setting="colorCritTrue" disabled></label>
       <label>Crit Path False <input type="color" data-setting="colorCritFalse" disabled></label>
 
+      <hr>
+      <label>Show Minimap HUD <input type="checkbox" data-setting="showMinimapHUD" disabled></label>
+      <label>HUD Room Scale <input type="range" data-setting="hudRoomScale" min="1" max="5" step="0.1" disabled></label>
+      <label>HUD Room Steps <input type="range" data-setting="hudRoomSteps" min="1" max="10" disabled></label>
+      <button id="setHUDPosition">Set HUD position</button>
+
+      <hr>
       <label>
         Goal Time
         <div style="display:flex; gap:4px;">

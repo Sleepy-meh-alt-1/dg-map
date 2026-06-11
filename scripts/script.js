@@ -1,3 +1,5 @@
+"use strict";
+
 A1lib.identifyApp("appconfig.json");
 
 const reader = new Chatbox.default();
@@ -7,6 +9,12 @@ const timestampRegex = /\[\d{2}:\d{2}:\d{2}\]/g;
 
 // These will be used as default, and any saved settings will override them on load
 const SETTINGS = {
+
+  showCameraAngle: true,
+  showMinimapHUD: true,
+  hudRoomScale: 2,
+  hudRoomSteps: 3,
+  hudPosition: {},
 
   colorKeyYes: 0xff33aa33,
   colorKeyNo: 0xffff0000,
@@ -19,6 +27,9 @@ const SETTINGS = {
   highlightMyLocation: true,
   highlightCorridors: true,
   highlightGatestone: true,
+
+  alt1TogglePartyOverlay: false,
+  alt1ToggleHUD: true,
 
   goalMinutes: 0,
   goalSeconds: 0,
@@ -51,6 +62,7 @@ const timeouts = {
   highlightCorridors: null,
   highlightGatestone: null,
   clearTooltip: null,
+  scanCompass: null,
 }
 
 let teamMembersSinceUs = [];
@@ -60,8 +72,10 @@ let gatestone1Location = null;
 let dungeonStartTime = null;
 let inFloor = false;
 let myKeys;
+let playerPath = [];
 let GRID_WIDTH = 8, GRID_HEIGHT = 8, grid, mapWidth = 280, mapHeight = 280;
 let mapX = 0, mapY = 0;
+let minimapX = null, minimapY = null, minimapWidth = null, minimapHeight = null;
 
 let failedGoal = false;
 
@@ -75,11 +89,24 @@ const OVERLAYS = {
   player: 'player',
   corridors: 'corridors',
   gatestone: 'gatestone',
+  cameraAngle: 'cameraAngle',
+  minimapHUD: 'minimapHUD',
+  minimapHUDCorridors: 'minimapHUDCorridors',
+  minimapKey: 'minimapKey',
   debug: 'debug',
   debugMap: 'debugMap',
+  debugCompass: 'debugCompass',
+  debugMinimap: 'debugMinimap',
 }
-const currentOverlay = OVERLAYS.default;
+const OVERLAY_Z_INDEX = {
+  minimapHUD: 10,
+  minimapHUDCorridors: 5,
+}
+
 const renderedOverlays = new Set();
+
+const mapRoomSize = 29;
+const mapRoomGap = 3;
 
 const RED = 0xffff0000
 const GREEN = 0xff33aa33
@@ -106,12 +133,60 @@ const TEAM_MEMBER_COLORS = [
   [100, 120, 87],
 ]
 
+const CARDINAL_DIRECTIONS = ['North', 'North-East', 'East', 'South-East', 'South', 'South-West', 'West', 'North-West'];
+const CARDINAL_OPPOSITES = {
+  north: "south",
+  south: "north",
+  east: "west",
+  west: "east",
+}
+
 function hexToDecimalARGB(hex) {
   hex = hex.replace("#", "");
   return parseInt(hex, 16) | 0xff000000;
 }
 function decimalToHexRGB(color) {
   return '#' + (color & 0xffffff).toString(16).padStart(6, "0");
+}
+
+function rgbToHsl(r, g, b) {
+  r /= 255;
+  g /= 255;
+  b /= 255;
+
+  const max = Math.max(r, g, b);
+  const min = Math.min(r, g, b);
+  const delta = max - min;
+
+  let h = 0;
+  let s = 0;
+  const l = (max + min) / 2;
+
+  if (delta !== 0) {
+    s = delta / (1 - Math.abs(2 * l - 1));
+
+    switch (max) {
+      case r:
+        h = 60 * (((g - b) / delta) % 6);
+        break;
+      case g:
+        h = 60 * ((b - r) / delta + 2);
+        break;
+      case b:
+        h = 60 * ((r - g) / delta + 4);
+        break;
+    }
+  }
+
+  if (h < 0) {
+    h += 360;
+  }
+
+  return {
+    h: Math.round(h),
+    s: Math.round(s * 100),
+    l: Math.round(l * 100),
+  };
 }
 
 function clearAllOverlays() {
@@ -126,15 +201,19 @@ function clearOverlay(name) {
   alt1.overLayRefreshGroup(name);
 }
 
-function overlay(name, draw, reset = true) {
-  const prevOverlay = currentOverlay;
+
+const overlayStack = [OVERLAYS.default];
+function overlay(name, draw, { reset = true, resume = true } = {}) {
+  overlayStack.push(name);
   renderedOverlays.add(name);
   alt1.overLaySetGroup(name);
   alt1.overLayFreezeGroup(name);
   if (reset) alt1.overLayClearGroup(name);
   draw();
-  alt1.overLayRefreshGroup(name);
-  alt1.overLaySetGroup(prevOverlay);
+  // if (resume) alt1.overLayRefreshGroup(name);
+  if (resume) alt1.overLayContinueGroup(name);
+  overlayStack.pop();
+  alt1.overLaySetGroup(overlayStack[overlayStack.length - 1]);
 }
 
 function setTooltip(text, duration = 5000) {
@@ -154,9 +233,18 @@ function handleAlt1Pressed(event) {
   if (x > alt1.rsWidth && !location.host.includes("github.io"))
     window.location.reload();
 
+  if (hudPositionStartAt) {
+    SETTINGS.hudPosition = { x, y };
+    clearTimeout(timeouts.setHUDPosition);
+    hudPositionStartAt = null;
+    alt1.clearTooltip();
+    return;
+  }
+
   if (!inFloor && findMapButton()) {
     DEBUG.lastStartBy = "alt1Pressed";
     startFloor();
+    return;
   }
 
   // if (x >= mapX && x <= mapX + mapWidth && y >= mapY && y <= mapY + mapHeight) {
@@ -199,7 +287,7 @@ function handleAlt1Pressed(event) {
     clearOverlay(OVERLAYS.members);
     partyListOverlayVisibleUntil = Date.now();
   }
-  else {
+  else if (SETTINGS.alt1TogglePartyOverlay) {
     overlay(OVERLAYS.members, () => {
       for (let i = 0; i < partyListRowBounds.length; i++) {
         const bounds = partyListRowBounds[i];
@@ -218,6 +306,10 @@ function handleAlt1Pressed(event) {
     partyListOverlayVisibleUntil = Date.now() + 5000;
   }
 
+  if (SETTINGS.alt1ToggleHUD) {
+    SETTINGS.showMinimapHUD = !SETTINGS.showMinimapHUD;
+    SETTING_CHANGED_HANDLERS.showMinimapHUD(SETTINGS.showMinimapHUD);
+  }
 }
 
 function clearTimeouts() {
@@ -470,12 +562,14 @@ function startFloor() {
   partySize = partySize || 1;
   gatestone1Location = null;
   myKeys = new Set();
+  playerPath = [];
   failedGoal = false;
   buildGrid();
   if (SETTINGS.highlightMyLocation) scanPlayerRoom();
   if (SETTINGS.highlightGatestone) highlightGatestone();
   if (SETTINGS.highlightCorridors) highlightCorridors();
   scanInterface();
+  scanCompass();
   alt1.clearTooltip();
 }
 
@@ -486,6 +580,7 @@ function stopFloor() {
   scanInterface();
   inFloor = false
   myKeys = new Set();
+  playerPath = [];
   grid = []
   indexedRooms = {};
   knownRooms = new Set();
@@ -498,6 +593,33 @@ function stopFloor() {
   teamMembersSinceUs = [];
   partyListCaptures = [];
   alt1.clearTooltip();
+}
+
+function findMinimap() {
+  const mapButton = findMapButton();
+  if (!mapButton)
+    return;
+
+  const compass = findCompass(mapButton.x, mapButton.y);
+  if (!compass)
+    return;
+
+  minimapX = compass.x - 18;
+  minimapY = compass.y - 39;
+  minimapWidth = mapButton.x + DG_MAP_ICON.width - minimapX + 20;
+  minimapHeight = mapButton.y + DG_MAP_ICON.height - minimapY + 8;
+  console.log('Minimap found at', minimapX, minimapY);
+
+  overlay(OVERLAYS.default, () => {
+    alt1.overLayRect(appColor, minimapX, minimapY, minimapWidth, minimapHeight, 1000, 2);
+  }, { reset: false });
+  return true;
+}
+
+function findCompass(limitX, limitY) {
+  const rsBind = alt1.bindRegion(0, 0, limitX || alt1.rsWidth, limitY || alt1.rsHeight);
+  const matches = JSON.parse(alt1.bindFindSubImg(rsBind, COMPASS.icon, COMPASS.width, 0, 0, limitX || alt1.rsWidth, limitY || alt1.rsHeight));
+  return matches[0];
 }
 
 function findMapButton() {
@@ -516,6 +638,391 @@ function scanMapButton() {
 
     DEBUG.lastStartBy = "scanMapButton";
     startFloor();
+  }
+}
+
+function applyBorder(imageData, color, thickness = 1) {
+  const { width, height, data } = imageData;
+  const r = (color >> 16) & 0xff;
+  const g = (color >> 8) & 0xff;
+  const b = color & 0xff;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const isBorder =
+        x < thickness ||
+        x >= width - thickness ||
+        y < thickness ||
+        y >= height - thickness;
+
+      if (isBorder) {
+        const i = (y * width + x) * 4;
+
+        data[i + 0] = r;
+        data[i + 1] = g;
+        data[i + 2] = b;
+        data[i + 3] = 255;
+      }
+    }
+  }
+
+  return imageData;
+}
+
+
+function processImage(imageData, { rotate: angle = 0, scale = 1, borderColor = null, borderThickness = 1, } = {}) {
+  const srcCanvas = document.createElement("canvas");
+  srcCanvas.width = imageData.width;
+  srcCanvas.height = imageData.height;
+
+  const srcCtx = srcCanvas.getContext("2d");
+  srcCtx.putImageData(imageData, 0, 0);
+
+  if (borderColor !== null) {
+    const a = ((borderColor >>> 24) & 0xff) / 255;
+    const r = (borderColor >>> 16) & 0xff;
+    const g = (borderColor >>> 8) & 0xff;
+    const b = (borderColor & 0xff);
+
+    srcCtx.strokeStyle = `rgba(${r},${g},${b},${a})`;
+    srcCtx.lineWidth = borderThickness;
+
+    srcCtx.strokeRect(
+      srcCtx.lineWidth / 2,
+      srcCtx.lineWidth / 2,
+      srcCanvas.width - srcCtx.lineWidth,
+      srcCanvas.height - srcCtx.lineWidth
+    );
+  }
+
+  const rads = angle * Math.PI / 180;
+
+  const scaledWidth = imageData.width * scale;
+  const scaledHeight = imageData.height * scale;
+
+  const cos = Math.abs(Math.cos(rads));
+  const sin = Math.abs(Math.sin(rads));
+
+  const rotatedWidth = Math.ceil(
+    scaledWidth * cos + scaledHeight * sin
+  );
+
+  const rotatedHeight = Math.ceil(
+    scaledWidth * sin + scaledHeight * cos
+  );
+
+  const canvas = document.createElement("canvas");
+  canvas.width = rotatedWidth;
+  canvas.height = rotatedHeight;
+
+  const ctx = canvas.getContext("2d");
+
+  ctx.translate(
+    canvas.width / 2,
+    canvas.height / 2
+  );
+
+  if (angle) {
+    ctx.rotate(rads);
+  }
+
+  if (scale !== 1) {
+    ctx.scale(scale, scale);
+  }
+
+  ctx.drawImage(
+    srcCanvas,
+    -imageData.width / 2,
+    -imageData.height / 2
+  );
+
+  return ctx.getImageData(
+    0,
+    0,
+    canvas.width,
+    canvas.height
+  );
+}
+
+function roomImageForHUD(room, angle) {
+  const roomImg = new ImageData(mapRoomSize, mapRoomSize);
+  A1lib.decodeImageString(room.capture, roomImg, 0, 0, roomImg.width, roomImg.height);
+  let borderColor = 0xffc0c0c0;
+  let borderThickness = 1;
+  if (room.state === "key") {
+    borderColor = room.color;
+    borderThickness = myKeys.has(room.key) ? 3 : 2;
+  }
+  else if (SETTINGS.showCritOverlay && room.crit != null) {
+    borderColor = room.crit ? SETTINGS.colorCritTrue : SETTINGS.colorCritFalse;
+    borderThickness = 2;
+  }
+
+  const img = processImage(roomImg, { scale: SETTINGS.hudRoomScale, rotate: -angle, borderColor, borderThickness });
+  const imgStr = A1lib.encodeImageString(img, 0, 0, img.width, img.height);
+  return {
+    img: imgStr,
+    width: img.width,
+    height: img.height,
+  }
+}
+
+function renderRoomsForHUD(room, steps, entryFrom, p1, p2, offsetH, offsetV, angle, prevCx, prevCy) {
+  if (!room) return;
+
+  const { cX, cY } = renderRoomForHUD(room, p1, p2, offsetH, offsetV, angle, entryFrom, prevCx, prevCy, steps);
+
+  for (const dir in ADJACENCE_OFFSETS) {
+    if (dir === entryFrom) continue;
+
+    const adjRoom = room[dir];
+    if (!adjRoom?.capture) continue;
+
+    const [rowOffset, colOffset] = ADJACENCE_OFFSETS[dir];
+    if (steps > 1)
+      renderRoomsForHUD(adjRoom, steps - 1, CARDINAL_OPPOSITES[dir], p1, p2, offsetH + colOffset, offsetV + rowOffset, angle, cX, cY);
+  }
+}
+
+function renderRoomForHUD(room, p1, p2, offsetH, offsetV, angle, entryFrom, prevCx, prevCy) {
+  const { img, width, height } = roomImageForHUD(room, angle);
+
+  const gap = 10 * SETTINGS.hudRoomScale;
+  const angleRad = (-angle + 360) % 360 * Math.PI / 180;
+  const cos = Math.cos(angleRad);
+  const sin = Math.sin(angleRad);
+  const mx = (p1.x + p2.x) / 2;
+  const my = (p1.y + p2.y) / 2;
+
+  const tx = (
+    mx
+    + offsetH * (mapRoomSize * SETTINGS.hudRoomScale + gap) * cos
+    - offsetV * (mapRoomSize * SETTINGS.hudRoomScale + gap) * sin
+  );
+  const ty = (
+    my
+    + offsetH * (mapRoomSize * SETTINGS.hudRoomScale + gap) * sin
+    + offsetV * (mapRoomSize * SETTINGS.hudRoomScale + gap) * cos
+  );
+
+  const dx = p2.x - p1.x;
+  const dy = p2.y - p1.y;
+  const length = Math.hypot(dx, dy);
+  const offsetX = Math.round(-dy / length * -(gap + mapRoomSize * SETTINGS.hudRoomScale / 2));
+  const offsetY = Math.round(dx / length * -(gap + mapRoomSize * SETTINGS.hudRoomScale / 2));
+
+  const posX = Math.round(tx + offsetX - width / 2);
+  const posY = Math.round(ty + offsetY - height / 2);
+
+  alt1.overLayImage(
+    posX,
+    posY,
+    img,
+    width,
+    600
+  );
+
+  if (entryFrom) {
+    const [rowOffset, colOffset] = ADJACENCE_OFFSETS[entryFrom];
+
+    overlay(OVERLAYS.minimapHUDCorridors, () => {
+      let color = 0xffc0c0c0;
+      if (room.state === "key") {
+        color = room.color;
+      }
+      else if (SETTINGS.showCritOverlay && room.crit != null) {
+        color = room.crit ? SETTINGS.colorCritTrue : SETTINGS.colorCritFalse;
+      }
+
+      alt1.overLayLine(
+        color,
+        7,
+        prevCx,
+        prevCy,
+        Math.round(posX + width / 2),
+        Math.round(posY + height / 2),
+        600
+      );
+    }, { reset: false, resume: false });
+  }
+
+
+  return {
+    cX: Math.round(posX + width / 2),
+    cY: Math.round(posY + height / 2),
+  }
+}
+
+function scanCompass() {
+  clearTimeout(timeouts.scanCompass);
+  if (!(SETTINGS.showCameraAngle || SETTINGS.showMinimapHUD)) {
+    clearOverlay(OVERLAYS.cameraAngle);
+    clearOverlay(OVERLAYS.minimapHUD);
+    clearOverlay(OVERLAYS.minimapHUDCorridors);
+    return;
+  }
+
+  if (!minimapWidth && !findMinimap()) {
+    timeouts.scanCompass = setTimeout(scanCompass, 1000);
+    console.log('Minimap not found, retrying...');
+    return;
+  }
+
+  const start = performance.now();
+
+  const compassOffset = 6;
+  const compassSize = 38;
+  const compassRadius = compassSize / 2;
+
+  const img = A1lib.capture(minimapX + compassOffset, minimapY + compassOffset, compassSize, compassSize);
+
+  let brightestRed, brightestRedX, brightestRedY;
+  for (let x = 0; x < compassSize; x++) {
+    for (let y = 0; y < compassSize; y++) {
+
+      // ignore pixels outside of compass circle
+      const centerOffset = Math.sqrt((x - compassRadius)**2 + (y - compassRadius)**2);
+      if (centerOffset > compassRadius) continue;
+
+      const idx = (y * img.width + x) * 4;
+      const r = img.data[idx];
+      const g = img.data[idx + 1];
+      const b = img.data[idx + 2];
+
+      const { h, s, l } = rgbToHsl(r, g, b);
+      if (h >= 0 && h <= 10 && s >= 50 && l >= 40) {
+        if (!brightestRed || r > brightestRed) {
+          brightestRed = r;
+          brightestRedX = x;
+          brightestRedY = y;
+        }
+      }
+    }
+  }
+
+  const angle = (Math.atan2(compassRadius - brightestRedX - 1, compassRadius - brightestRedY) * 180 / Math.PI + 360) % 360;
+  const directionIndex = Math.round(angle / 45) % 8;
+  const direction = CARDINAL_DIRECTIONS[directionIndex];
+
+  if (SETTINGS.debug) {
+    console.log('Minimap viewing angle:', Math.round(angle), 'degrees, facing', direction);
+    overlay(OVERLAYS.debugCompass, () => {
+      alt1.overLayRect(0xffff0000,
+        minimapX + compassOffset,
+        minimapY + compassOffset,
+        compassSize,
+        compassSize,
+        200,
+        2
+      );
+      alt1.overLayLine(0xffff00ff, 3,
+        minimapX + compassOffset + compassSize/2 - 1,
+        minimapY + compassOffset + compassSize/2,
+        minimapX + compassOffset + brightestRedX - 1,
+        minimapY + compassOffset + brightestRedY,
+        200
+      );
+    });
+
+
+    overlay(OVERLAYS.debugMinimap, () => {
+      alt1.overLayRect(appColor, minimapX, minimapY, minimapWidth, minimapHeight, 1000, 2);
+    });
+  }
+
+  const playerRoom = scanPlayerRoom();
+  if (playerRoom) {
+    if (SETTINGS.showCameraAngle) {
+      const roomCenterX = playerRoom.x + Math.round(playerRoom.width / 2);
+      const roomCenterY = playerRoom.y + Math.round(playerRoom.height / 2);
+
+      const cameraWindowAngle = 60;
+      const angle1 = (((angle - cameraWindowAngle/2) + 360) % 360) * Math.PI / 180;
+      const angle2 = (((angle + cameraWindowAngle/2) + 360) % 360) * Math.PI / 180;
+      const lineLength = 50;
+
+      const x1 = roomCenterX + Math.round(Math.sin(angle1) * lineLength);
+      const y1 = roomCenterY - Math.round(Math.cos(angle1) * lineLength);
+      const x2 = roomCenterX + Math.round(Math.sin(angle2) * lineLength);
+      const y2 = roomCenterY - Math.round(Math.cos(angle2) * lineLength);
+
+      overlay(OVERLAYS.cameraAngle, () => {
+        alt1.overLayLine(0xff00ffff, 2, roomCenterX, roomCenterY, x1, y1, 600);
+        alt1.overLayLine(0xff00ffff, 2, roomCenterX, roomCenterY, x2, y2, 600);
+      });
+    }
+
+    if (SETTINGS.showMinimapHUD) {
+      const hudBoxSize = mapRoomSize * SETTINGS.hudRoomScale; // 150;
+      const centerX = SETTINGS.hudPosition?.x || Math.round(alt1.rsWidth/2);
+      const centerY = SETTINGS.hudPosition?.y || Math.round(alt1.rsHeight/2);
+
+      const angleRad = (-angle + 360) % 360 * Math.PI / 180;
+      const cos = Math.cos(angleRad);
+      const sin = Math.sin(angleRad);
+
+      const corners = [
+        { x: -hudBoxSize/2, y: -hudBoxSize/2 },
+        { x:  hudBoxSize/2, y: -hudBoxSize/2 },
+        { x:  hudBoxSize/2, y:  hudBoxSize/2 },
+        { x: -hudBoxSize/2, y:  hudBoxSize/2 },
+      ].map(corner => {
+        return {
+          x: centerX + Math.round(corner.x * cos - corner.y * sin),
+          y: centerY + Math.round(corner.x * sin + corner.y * cos),
+        }
+      });
+
+      let color = 0xffa0663d;
+      if (playerRoom.crit === true)
+        color = SETTINGS.colorCritTrue;
+      else if (playerRoom.crit === false)
+        color = SETTINGS.colorCritFalse;
+      const colors = [0xffff0000, color, 0xffffffff, color];
+      const dirs = ['north', 'east', 'south', 'west'];
+
+      overlay(OVERLAYS.minimapHUD, () => {
+        alt1.overLayClearGroup(OVERLAYS.minimapHUDCorridors);
+
+        for (let i = 0; i < 4; i++) {
+          const next = (i + 1) % 4;
+          alt1.overLayLine(
+            colors[i],
+            3,
+            corners[i].x,
+            corners[i].y,
+            corners[next].x,
+            corners[next].y,
+            600
+          );
+
+          renderRoomsForHUD(
+            playerRoom[dirs[i]],
+            SETTINGS.hudRoomSteps,
+            CARDINAL_OPPOSITES[dirs[i]],
+            corners[i],
+            corners[next],
+            0,
+            0,
+            angle,
+            Math.round((corners[i].x + corners[next].x) / 2),
+            Math.round((corners[i].y + corners[next].y) / 2),
+          );
+        }
+
+        alt1.overLayRefreshGroup(OVERLAYS.minimapHUDCorridors);
+
+      });
+    }
+  }
+
+  const end = performance.now();
+  // console.log('Projection overlay rendered in', Math.round(end - start), 'ms');
+  timeouts.scanCompass = setTimeout(scanCompass, 50);
+
+  return {
+    angle,
+    direction,
   }
 }
 
@@ -540,7 +1047,7 @@ function findAnchor() {
       if (roomMatch) {
         overlay(OVERLAYS.debugMap, () => {
           alt1.overLayRect(appColor, x + roomMatch.x, y + roomMatch.y, r.width, r.height, 600, Math.ceil(r.width / 2));
-        }, false);
+        }, { reset: false });
 
         return anchor;
       }
@@ -604,9 +1111,6 @@ function buildGrid() {
   const offsetX = 13;
   const offsetY = 14;
 
-  const roomSize = 29;
-  const gap = 3;
-
   alt1.overLayText("MAP", appColor, 20, Math.floor(mapX + mapWidth / 2) - 40, mapY - 40, 1000);
   alt1.overLayRect(appColor, mapX, mapY, mapWidth, mapHeight, 1000, 1);
   // alt1.overLayRect(0xffff0000, mapX + mapPadding, mapY + mapPadding, mapWidth - 2 * mapPadding, mapWidth - 2 * mapPadding, 5000, 1);
@@ -619,29 +1123,30 @@ function buildGrid() {
 
     for (let col = 0; col < GRID_WIDTH; col++) {
 
-      const x = mapX + offsetX + col * (roomSize + gap);
-      const y = mapY + offsetY + row * (roomSize + gap);
+      const x = mapX + offsetX + col * (mapRoomSize + mapRoomGap);
+      const y = mapY + offsetY + row * (mapRoomSize + mapRoomGap);
 
       rowArray.push({
+        id: `${row}:${col}`,
         row, col,
         x, y,
-        x2: x + roomSize,
-        y2: y + roomSize,
-        width: roomSize,
-        height: roomSize,
+        x2: x + mapRoomSize,
+        y2: y + mapRoomSize,
+        width: mapRoomSize,
+        height: mapRoomSize,
         color: null,
         key: null,
         skill: null,
         state: null,
         crit: null,
-        north: false,
-        east: false,
-        south: false,
-        west: false,
+        north: null,
+        east: null,
+        south: null,
+        west: null,
         player: false
       });
 
-      //alt1.overLayRect(0xff00ff00, x, y, roomSize, roomSize, 1000, 2);
+      //alt1.overLayRect(0xff00ff00, x, y, mapRoomSize, mapRoomSize, 1000, 2);
     }
 
     grid.push(rowArray);
@@ -669,12 +1174,13 @@ function scanDungeonMapFull() {
   for (let row = 0; row < GRID_HEIGHT; row++) {
     for (let col = 0; col < GRID_WIDTH; col++) {
       const room = grid[row][col];
-      setRoomState(room);
       indexedRooms[room.id] = room;
-
-      //DEBUG
-      // alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 3000, 1)
     }
+  }
+
+  for (const roomId in indexedRooms) {
+    const room = indexedRooms[roomId];
+    setRoomState(room);
   }
 
   showStats()
@@ -811,7 +1317,6 @@ const ADJACENCE_OFFSETS = {
 }
 
 function setRoomState(room) {
-  room.id = `${room.row}:${room.col}`;
   // alt1.overLayRect(0xff0000ff, room.x, room.y, room.width, room.height, 1000, 1)
 
   const img = A1lib.capture(room.x, room.y, room.width, room.height);
@@ -852,6 +1357,7 @@ function setRoomState(room) {
   }
 
 
+  room.capture = A1lib.encodeImageString(img, 0, 0, img.width, img.height);
   if (room.state === "visited") {
     room.color = SETTINGS.colorKeyYes;
 
@@ -860,9 +1366,9 @@ function setRoomState(room) {
     if (corridors?.length) {
       for (const dir of corridors) {
         // console.log('Found corridor', dir, 'in room', room.id);
-        room[dir] = true;
         const [rowOffset, colOffset] = ADJACENCE_OFFSETS[dir];
         const adjacentRoom = indexedRooms[`${room.row + rowOffset}:${room.col + colOffset}`];
+        room[dir] = adjacentRoom;
         if (adjacentRoom?.state === "unknown") {
           unknownAdjacents.add(adjacentRoom.id);
           console.log('Found adjacent of', room.id, dir, 'at', adjacentRoom.id)
@@ -902,13 +1408,14 @@ function setRoomState(room) {
 
         // if we have the key, set the color to green, oterwise set to red
         if (match) {
-          const owned = myKeys.has(key.name.toLowerCase());
           room.state = "key"
-          room.color = owned ?
+          room.key = key.name.toLowerCase();
+          room.color = myKeys.has(room.key) ?
             SETTINGS.colorKeyYes :
             SETTINGS.colorKeyNo
+
           if (prevState !== "key") {
-            if (owned)
+            if (myKeys.has(room.key))
               console.warn(`Key scan: plain ${key.name} @ ${room.id} (owned) - HL scan miss?`);
             else
               console.log(`Key scan: plain ${key.name} @ ${room.id} (not owned)`);
@@ -990,6 +1497,17 @@ function scanPlayerRoom() {
       break;
     }
   }
+
+  if (playerPath[playerPath.length - 1] !== playerRoom?.id) {
+    const prevRoomId = playerPath[playerPath.length - 1];
+    playerPath.push(playerRoom?.id);
+    if (prevRoomId) {
+      const prevRoom = indexedRooms[prevRoomId];
+      const img = A1lib.capture(prevRoom.x, prevRoom.y, prevRoom.width, prevRoom.height);
+      prevRoom.capture = A1lib.encodeImageString(img, 0, 0, img.width, img.height);
+    }
+  }
+
   const end = performance.now();
 
   if (SETTINGS.highlightMyLocation)
@@ -1421,6 +1939,34 @@ document.querySelectorAll(".panel .panel-toggle").forEach(button => {
   });
 });
 
+let hudPositionStartAt = null;
+function waitForHUDPosition() {
+  if (hudPositionStartAt === null) {
+    hudPositionStartAt = Date.now();
+  }
+  const remaining = 30 - (Date.now() - hudPositionStartAt) / 1000;
+
+  if (remaining > 0) {
+    alt1.setTooltip(`Position your mouse where you want the HUD center to be, and press alt+1 to set position.\nFor best effect, position it centered on your character. (${Math.round(remaining)}s)`);
+    timeouts.setHUDPosition = setTimeout(waitForHUDPosition, 100);
+  }
+  else {
+    hudPositionStartAt = null;
+    alt1.clearTooltip();
+  }
+}
+
+document.getElementById("setHUDPosition").addEventListener("click", () => {
+  if (!hudPositionStartAt) {
+    waitForHUDPosition();
+  }
+  else {
+    clearTimeout(timeouts.setHUDPosition);
+    hudPositionStartAt = null;
+    alt1.clearTooltip();
+  }
+});
+
 const SETTING_CHANGED_HANDLERS = {
 
   debug: value => {
@@ -1429,6 +1975,26 @@ const SETTING_CHANGED_HANDLERS = {
     }
 
     document.querySelector('[data-setting="debug"]').closest('.panel').classList.toggle('open', value);
+  },
+
+  showCameraAngle: value => {
+    if (value) {
+      scanCompass();
+    }
+    else {
+      clearOverlay(OVERLAYS.cameraAngle);
+    }
+  },
+
+  showMinimapHUD: value => {
+    if (value) {
+      scanCompass();
+    }
+    else {
+      clearOverlay(OVERLAYS.minimapHUD);
+      clearOverlay(OVERLAYS.minimapHUDCorridors);
+    }
+    document.querySelector('[data-setting="showMinimapHUD"]').checked = value;
   },
 
   floorSize: value => {
@@ -1534,6 +2100,10 @@ function loadSettings() {
         valueAttr = "value";
         parseFunc = Number;
         break;
+      case "range":
+        valueAttr = "value";
+        parseFunc = Number;
+        break;
       case "checkbox":
         valueAttr = "checked";
         eventName = "change";
@@ -1619,5 +2189,9 @@ window.addEventListener('load', () => {
   }, 1000);
 
   scanInterface();
+
+  for (const o in OVERLAY_Z_INDEX) {
+    alt1.overLaySetGroupZIndex(OVERLAYS[o], OVERLAY_Z_INDEX[o]);
+  }
 
 });
