@@ -411,18 +411,23 @@ async function checkLine(line) {
   const critMatch = line.match(/level (\d+) (\w+)/i);
   if (critMatch) {
     const level = Number(critMatch[1]);
-    const skill = critMatch[2].toLowerCase();
-    const iconData = SKILL_ICONS.find(s => s.name.toLowerCase() === skill);
+    const skillName = critMatch[2].toLowerCase();
+    const skill = SKILL_ICONS.find(s => s.name.toLowerCase() === skillName);
 
-    const skillRoom = scanAdjacentSkillDoors(iconData)[0]
+    const skillRoom = findNearestRoom(room => {
+      if (room.state !== "locked") return false;
+      if (room.crit !== null) return false;
+
+      const bind = alt1.bindRegion(room.x, room.y, room.width, room.height);
+      const matches = JSON.parse(alt1.bindFindSubImg(bind, skill.icon, skill.width, 0, 0, room.width, room.height));
+      return matches.length > 0;
+    }, { traversal: "doors" });
+
     if (skillRoom) {
-      if (level >= iconData.max_level - 10 && level <= iconData.max_level) {
-        grid[skillRoom.room.row][skillRoom.room.col].crit = true
-      }
-      else {
-        grid[skillRoom.room.row][skillRoom.room.col].crit = false
-      }
+      skillRoom.crit = level >= skill.max_level - 10 && level <= skill.max_level;
+      skillRoom.skill = skill.name;
     }
+
     return;
   }
 
@@ -1803,55 +1808,45 @@ function getUnreachableRooms() {
 
 }
 
+function findNearestRoom(predicate, { startRoom = null, traversal = "grid" } = {}) {
+  const queue = [startRoom || scanPlayerRoom()];
+  const visited = new Set();
 
-function scanAdjacentSkillDoors(skill) {
-
-
-  console.log(skill)
-  const playerRoom = scanPlayerRoom();
-  console.log(playerRoom)
-  // alt1.overLayRect(0xff0000ff, playerRoom.x, playerRoom.y, playerRoom.width, playerRoom.height, 1000, 2);
-
-  if (!playerRoom) {
-    return [];
-  }
-
-  const matchesFound = [];
-
-  const directions = [
-    ["north", -1, 0],
-    ["east", 0, 1],
-    ["south", 1, 0],
-    ["west", 0, -1]
-  ];
-
-  for (const [dir, dr, dc] of directions) {
-
-    const row = playerRoom.row + dr;
-    const col = playerRoom.col + dc;
-
-    // bounds checks
-    if (row < 0 || row >= GRID_HEIGHT || col < 0 || col >= GRID_WIDTH) {
+  while (queue.length > 0) {
+    const room = queue.shift();
+    if (!room || visited.has(room.id)) {
       continue;
     }
 
-    const room = grid[row][col];
+    visited.add(room.id);
 
-    if (!room) {
-      continue;
+    if (predicate(room)) {
+      return room;
     }
 
-    const bind = alt1.bindRegion(room.x, room.y, room.width, room.height);
-    const matches = JSON.parse(alt1.bindFindSubImg(bind, skill.icon, skill.width, 0, 0, room.width, room.height));
-
-    if (matches.length > 0) {
-
-      room.skill = skill.name;
-      matchesFound.push({ direction: dir, room, match: matches[0] });
+    switch (traversal) {
+    case "doors":
+      for (const dir in ADJACENCE_OFFSETS) {
+        if (room[dir]) {
+          queue.push(room[dir]);
+        }
+      }
+      break;
+    case "grid":
+      for (const dir in ADJACENCE_OFFSETS) {
+        const [rowOffset, colOffset] = ADJACENCE_OFFSETS[dir];
+        const adjacentId = `${room.row + rowOffset}:${room.col + colOffset}`;
+        const adjacentRoom = indexedRooms[adjacentId];
+        if (adjacentRoom) {
+          queue.push(adjacentRoom);
+        }
+      }
+      break;
     }
+
   }
 
-  return matchesFound;
+  return null;
 }
 
 function updateDebugOverlays() {
