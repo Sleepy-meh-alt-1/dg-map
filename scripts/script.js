@@ -76,6 +76,7 @@ let playerPath = [];
 let GRID_WIDTH = 8, GRID_HEIGHT = 8, grid, mapWidth = 280, mapHeight = 280;
 let mapX = 0, mapY = 0;
 let minimapX = null, minimapY = null, minimapWidth = null, minimapHeight = null;
+let cameraAngle = null;
 
 let failedGoal = false;
 
@@ -134,6 +135,12 @@ const TEAM_MEMBER_COLORS = [
 ]
 
 const CARDINAL_DIRECTIONS = ['North', 'North-East', 'East', 'South-East', 'South', 'South-West', 'West', 'North-West'];
+const CARDINAL_ANGLES = {
+  north: 0,
+  east: 90,
+  south: 180,
+  west: 270,
+}
 const CARDINAL_OPPOSITES = {
   north: "south",
   east:  "west",
@@ -911,12 +918,12 @@ function scanCompass() {
     }
   }
 
-  const angle = (Math.atan2(compassRadius - brightestRedX - 1, compassRadius - brightestRedY) * 180 / Math.PI + 360) % 360;
-  const directionIndex = Math.round(angle / 45) % 8;
+  cameraAngle = (Math.atan2(compassRadius - brightestRedX - 1, compassRadius - brightestRedY) * 180 / Math.PI + 360) % 360;
+  const directionIndex = Math.round(cameraAngle / 45) % 8;
   const direction = CARDINAL_DIRECTIONS[directionIndex];
 
   if (SETTINGS.debug) {
-    console.log('Minimap viewing angle:', Math.round(angle), 'degrees, facing', direction);
+    console.log('Minimap viewing angle:', Math.round(cameraAngle), 'degrees, facing', direction);
     overlay(OVERLAYS.debugCompass, () => {
       alt1.overLayRect(0xffff0000,
         minimapX + compassOffset,
@@ -948,8 +955,8 @@ function scanCompass() {
       const roomCenterY = playerRoom.y + Math.round(playerRoom.height / 2);
 
       const cameraWindowAngle = 60;
-      const angle1 = (((angle - cameraWindowAngle/2) + 360) % 360) * Math.PI / 180;
-      const angle2 = (((angle + cameraWindowAngle/2) + 360) % 360) * Math.PI / 180;
+      const angle1 = (((cameraAngle - cameraWindowAngle/2) + 360) % 360) * Math.PI / 180;
+      const angle2 = (((cameraAngle + cameraWindowAngle/2) + 360) % 360) * Math.PI / 180;
       const lineLength = 50;
 
       const x1 = roomCenterX + Math.round(Math.sin(angle1) * lineLength);
@@ -968,7 +975,7 @@ function scanCompass() {
       const centerX = SETTINGS.hudPosition?.x || Math.round(alt1.rsWidth/2);
       const centerY = SETTINGS.hudPosition?.y || Math.round(alt1.rsHeight/2);
 
-      const angleRad = (-angle + 360) % 360 * Math.PI / 180;
+      const angleRad = (-cameraAngle + 360) % 360 * Math.PI / 180;
       const cos = Math.cos(angleRad);
       const sin = Math.sin(angleRad);
 
@@ -1015,7 +1022,7 @@ function scanCompass() {
             corners[next],
             0,
             0,
-            angle,
+            cameraAngle,
             Math.round((corners[i].x + corners[next].x) / 2),
             Math.round((corners[i].y + corners[next].y) / 2),
           );
@@ -1032,7 +1039,7 @@ function scanCompass() {
   timeouts.scanCompass = setTimeout(scanCompass, 50);
 
   return {
-    angle,
+    cameraAngle,
     direction,
   }
 }
@@ -1824,16 +1831,23 @@ function findNearestRoom(predicate, { startRoom = null, traversal = "grid" } = {
       return room;
     }
 
+    const sortedDirs = Object.keys(ADJACENCE_OFFSETS).sort((a, b) => {
+      const dA = Math.abs(((CARDINAL_ANGLES[a] - cameraAngle) % 360));
+      const dB = Math.abs(((CARDINAL_ANGLES[b] - cameraAngle) % 360));
+
+      return Math.min(dA, 360 - dA) - Math.min(dB, 360 - dB);
+    });
+
     switch (traversal) {
     case "doors":
-      for (const dir in ADJACENCE_OFFSETS) {
+      for (const dir of sortedDirs) {
         if (room[dir]) {
           queue.push(room[dir]);
         }
       }
       break;
     case "grid":
-      for (const dir in ADJACENCE_OFFSETS) {
+      for (const dir of sortedDirs) {
         const [rowOffset, colOffset] = ADJACENCE_OFFSETS[dir];
         const adjacentId = `${room.row + rowOffset}:${room.col + colOffset}`;
         const adjacentRoom = indexedRooms[adjacentId];
@@ -1843,7 +1857,6 @@ function findNearestRoom(predicate, { startRoom = null, traversal = "grid" } = {
       }
       break;
     }
-
   }
 
   return null;
