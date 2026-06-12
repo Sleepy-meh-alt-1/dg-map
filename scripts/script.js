@@ -148,12 +148,16 @@ let partyListOverlayVisibleUntil = 0;
 function handleAlt1Pressed(event) {
   console.log('alt1pressed', event)
 
+  const { x, y } = event;
+
+  // Easier reloads during development, alt1 outside of the rs window
+  if (x > alt1.rsWidth && !location.host.includes("github.io"))
+    window.location.reload();
+
   if (!inFloor && findMapButton()) {
     DEBUG.lastStartBy = "alt1Pressed";
     startFloor();
   }
-
-  const { x, y } = event;
 
   // if (x >= mapX && x <= mapX + mapWidth && y >= mapY && y <= mapY + mapHeight) {
   //   console.log('Map clicked at', x, y);
