@@ -136,9 +136,15 @@ const TEAM_MEMBER_COLORS = [
 const CARDINAL_DIRECTIONS = ['North', 'North-East', 'East', 'South-East', 'South', 'South-West', 'West', 'North-West'];
 const CARDINAL_OPPOSITES = {
   north: "south",
+  east:  "west",
   south: "north",
-  east: "west",
-  west: "east",
+  west:  "east",
+}
+const ADJACENCE_OFFSETS = {
+  north: [-1, 0],
+  east:  [0, 1],
+  south: [1, 0],
+  west:  [0, -1],
 }
 
 function hexToDecimalARGB(hex) {
@@ -1314,12 +1320,6 @@ window.indexedRooms = indexedRooms;
 //   return html;
 // }
 // window.exportDebugLockedRoomCaptures = exportDebugLockedRoomCaptures;
-const ADJACENCE_OFFSETS = {
-  north: [-1, 0],
-  south: [1, 0],
-  east: [0, 1],
-  west: [0, -1],
-}
 
 function setRoomState(room) {
   // alt1.overLayRect(0xff0000ff, room.x, room.y, room.width, room.height, 1000, 1)
