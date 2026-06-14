@@ -23,6 +23,7 @@ const SETTINGS = {
 
   showKeyOverlay: true,
   showCritOverlay: true,
+  showUnreachableOverlay: true,
   showScanOverlay: true,
   highlightMyLocation: true,
   highlightCorridors: true,
@@ -1174,7 +1175,6 @@ function scanDungeonMapFull() {
   DEBUG.scanDungeonMapFullAt = new Date();
   DEBUG.scanDungeonMapFullTime = Math.round(end - start);
   updateDebugStats();
-
   timeouts.scanDungeonMap = setTimeout(scanDungeonMapPartial, 1000);
 }
 
@@ -1209,10 +1209,10 @@ function scanDungeonMapPartial() {
   }
 
   overlay(OVERLAYS.rooms, () => {
-    for (let roomId of knownRooms) {
+    for (let roomId in indexedRooms) {
       const room = indexedRooms[roomId];
 
-      if (room.state !== 'visited') {
+      if (knownRooms.has(roomId) && room.state !== 'visited') {
         if (SETTINGS.showScanOverlay && !room.scanShown) {
           alt1.overLayRect(0xffff00ff, room.x , room.y, room.width, room.height, 1000, 1);
           room.scanShown = true;
@@ -1230,7 +1230,12 @@ function scanDungeonMapPartial() {
       ) {
         alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 2000, 1)
       }
+      else if (SETTINGS.showUnreachableOverlay && room.state === "unreachable") {
+        alt1.overLayLine(room.color, 2, room.x + 8, room.y + 8, room.x + room.width - 8, room.y + room.height - 8, 2000);
+        alt1.overLayLine(room.color, 2, room.x + room.width - 8, room.y + 8, room.x + 8, room.y + room.height - 8, 2000);
+      }
     }
+
   });
 
   showStats()
@@ -1272,6 +1277,41 @@ window.indexedRooms = indexedRooms;
 // }
 // window.exportDebugLockedRoomCaptures = exportDebugLockedRoomCaptures;
 
+function updateUnreachables(startRoom) {
+  const queue = [startRoom];
+  const visited = new Set();
+  const unknownPath = [];
+
+  console.log('Start unreachable scan from', startRoom.id);
+
+  while (queue.length > 0) {
+    const room = queue.shift();
+    if (room && room.state === null) return console.log('Found null state room during unreachable scan, aborting and waiting for next scan to try again', room.id);
+    if (!room || visited.has(room.id) || room.state !== "unknown") continue;
+    visited.add(room.id);
+    unknownPath.push(room);
+
+    for (const d in ADJACENCE_OFFSETS) {
+      const [ro, co] = ADJACENCE_OFFSETS[d];
+      const adj = indexedRooms[`${room.row + ro}:${room.col + co}`];
+      if (!adj) continue;
+      if (adj.state === "unknown") {
+        queue.push(adj);
+      }
+      else if (adj.state !== "visited") {
+        return;
+      }
+    }
+  }
+
+  for (const room of unknownPath) {
+    room.state = "unreachable";
+    room.color = 0xffaa0000;
+  }
+
+  console.log('Unreachable check', visited, unknownPath);
+}
+
 function setRoomState(room) {
   // alt1.overLayRect(0xff0000ff, room.x, room.y, room.width, room.height, 1000, 1)
 
@@ -1294,8 +1334,13 @@ function setRoomState(room) {
   //     console.log('Scanned', room.id, 'but found nothing');
   // }
 
-  if (!state)
-    return console.log('Unable to determine state of room', room.id);
+  if (!state) {
+    if (room.state)
+      return console.log('Unable to determine state of room', room.id);
+
+    room.state = "unknown";
+    return;
+  }
 
   room.state = state;
   knownRooms.add(room.id);
@@ -1316,8 +1361,19 @@ function setRoomState(room) {
         if (adjacentRoom) {
           knownRooms.add(adjacentRoom.id);
           console.log('Found adjacent of', room.id, dir, 'at', adjacentRoom.id)
+          if (adjacentRoom.state === "unknown")
+            setRoomState(adjacentRoom);
         }
       }
+    }
+
+    for (const dir in ADJACENCE_OFFSETS) {
+      if (corridors?.includes(dir)) continue;
+
+      const [ro, co] = ADJACENCE_OFFSETS[dir];
+      const adjacentRoom = indexedRooms[`${room.row + ro}:${room.col + co}`];
+      if (adjacentRoom)
+        updateUnreachables(adjacentRoom);
     }
 
     if (SETTINGS.highlightCorridors && (room.north || room.east || room.south || room.west))
@@ -1569,9 +1625,6 @@ function showStats() {
 
   let unreachable = 0;
 
-  getUnreachableRooms()
-
-
   let rpm = "-";
 
   for (let row = 0; row < GRID_HEIGHT; row++) {
@@ -1683,92 +1736,6 @@ function showStats() {
 }
 
 
-
-function getUnreachableRooms() {
-
-  const fakeGrid = structuredClone(grid);
-
-  const directions = [
-    [-1, 0],
-    [0, 1],
-    [1, 0],
-    [0, -1]
-  ];
-
-  let changed = true;
-
-  while (changed) {
-
-    changed = false;
-    const toLock = [];
-
-    for (let row = 0; row < GRID_HEIGHT; row++) {
-      for (let col = 0; col < GRID_WIDTH; col++) {
-
-        const room = fakeGrid[row][col];
-
-        // locked/key become visited
-        if (room.state === "locked") {
-
-          room.state = "visited";
-
-          // spread into neighbors
-          for (const [dr, dc] of directions) {
-
-            const nr = row + dr;
-            const nc = col + dc;
-
-            if (
-              nr < 0 ||
-              nr >= GRID_HEIGHT ||
-              nc < 0 ||
-              nc >= GRID_WIDTH
-            ) {
-              continue;
-            }
-
-            const neighbor =
-              fakeGrid[nr][nc];
-
-            if (!neighbor) {
-              continue;
-            }
-
-            // unknown becomes locked
-            if (
-              neighbor.state === "unknown"
-            ) {
-
-              toLock.push(neighbor);
-            }
-          }
-        }
-      }
-    }
-
-    for (const room of toLock) {
-      room.state = "locked";
-      changed = true;
-    }
-  }
-
-  let unreachable = 0;
-  for (let row = 0; row < GRID_HEIGHT; row++) {
-    for (let col = 0; col < GRID_WIDTH; col++) {
-      const room = fakeGrid[row][col];
-
-      if (room.state === "unknown") {
-        grid[row][col].state = "unreachable"
-
-        // debug overlay
-        //alt1.overLayRect(0xffff00ff, room.x, room.y, room.width, room.height, 200, 1);
-
-      }
-    }
-  }
-
-}
-
 function findNearestRoom(predicate, { startRoom = null, traversal = "grid" } = {}) {
   const queue = [startRoom || scanPlayerRoom()];
   const visited = new Set();
@@ -1833,12 +1800,16 @@ function updateDebugOverlays() {
       let color = 0xffffffff, inset = 0;
       switch (room.state) {
         case 'visited': color = 0xff00ff00; inset = 3; break;
-        case 'locked': color = 0xffee6f00; inset = 3; break;
-        case 'key': color = room.color; break;
+        case 'locked': color = room.color; break;
         case 'unknown': color = 0xffff00ff; break;
-        case 'unreachable': color = 0xff0000ff; break;
+        case 'unreachable': color = room.color; break;
       }
-      alt1.overLayRect(color, room.x + inset, room.y + inset, room.width - 2 * inset, room.height - 2 * inset, 600, 1);
+      if (room.state === "unreachable") {
+        alt1.overLayLine(color, 2, room.x + 8, room.y + 8, room.x + room.width - 8, room.y + room.height - 8, 2000);
+        alt1.overLayLine(color, 2, room.x + room.width - 8, room.y + 8, room.x + 8, room.y + room.height - 8, 2000);
+      }
+      else
+        alt1.overLayRect(color, room.x + inset, room.y + inset, room.width - 2 * inset, room.height - 2 * inset, 600, 1);
     }
 
 
