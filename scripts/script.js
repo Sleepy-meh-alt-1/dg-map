@@ -65,6 +65,9 @@ const timeouts = {
   scanCompass: null,
 }
 
+
+let indexedRooms;
+let knownRooms;
 let teamMembersSinceUs = [];
 let playerIndex = 0;
 let partySize = null;
@@ -238,13 +241,13 @@ function setTooltip(text, duration = 5000) {
 let partyListOverlayVisibleUntil = 0;
 
 function handleAlt1Pressed(event) {
-  console.log('alt1pressed', event)
+  // console.log('alt1pressed', event)
 
   const { x, y } = event;
 
   // Easier reloads during development, alt1 outside of the rs window
   if (x > alt1.rsWidth && !location.host.includes("github.io"))
-    window.location.reload();
+    return window.location.reload();
 
   if (hudPositionStartAt) {
     SETTINGS.hudPosition = { x, y };
@@ -402,25 +405,6 @@ async function checkLine(line) {
     lastLines.pop();
   }
 
-
-  const keyMatch = line.match(/Your party (found|used) a key: (\w+) (\w+) key/i);
-  if (keyMatch) {
-    const action = keyMatch[1].toLowerCase();
-    const color = keyMatch[2].toLowerCase();
-    const shape = keyMatch[3].toLowerCase();
-
-    const keyName = `${color} ${shape} key`;
-
-    console.log(action, keyName)
-
-    if (action === "found")
-      myKeys.add(keyName);
-    else if (action === "used")
-      myKeys.delete(keyName);
-
-    return;
-  }
-
   const critMatch = line.match(/level (\d+) (\w+)/i);
   if (critMatch) {
     const level = Number(critMatch[1]);
@@ -431,13 +415,13 @@ async function checkLine(line) {
       if (room.state !== "locked") return false;
       if (room.crit !== null) return false;
 
-      const bind = alt1.bindRegion(room.x, room.y, room.width, room.height);
-      const matches = JSON.parse(alt1.bindFindSubImg(bind, skill.icon, skill.width, 0, 0, room.width, room.height));
-      return matches.length > 0;
+      return room.skill === skill.name;
     }, { traversal: "doors" });
 
     if (skillRoom) {
-      skillRoom.crit = level >= skill.max_level - 10 && level <= skill.max_level;
+      const crit = level >= skill.max_level - 10 && level <= skill.max_level;
+      skillRoom.crit = crit;
+      skillRoom.color = crit ? SETTINGS.colorCritTrue : SETTINGS.colorCritFalse;
       skillRoom.skill = skill.name;
     }
 
@@ -452,17 +436,12 @@ async function checkLine(line) {
     const tier = Number(tierMatch[1]);
 
     const playerRoom = scanPlayerRoom()
-
     if (playerRoom) {
-      if (tier > 8) {
-        if (grid[playerRoom.row][playerRoom.col].crit !== false) {
-          grid[playerRoom.row][playerRoom.col].crit = true;
-        }
-      }
-      else {
-        grid[playerRoom.row][playerRoom.col].crit = false;
-      }
+      const crit = tier >= 9;
+      playerRoom.crit = crit;
+      playerRoom.color = crit ? SETTINGS.colorCritTrue : SETTINGS.colorCritFalse;
     }
+
     return;
   }
 
@@ -602,8 +581,6 @@ function stopFloor() {
   grid = []
   indexedRooms = {};
   knownRooms = new Set();
-  unknownAdjacents = new Set();
-  unknownRescans = new Set();
   playerIndex = 0;
   partySize = null;
   gatestone1Location = null;
@@ -767,12 +744,12 @@ function roomImageForHUD(room, angle) {
   A1lib.decodeImageString(room.capture, roomImg, 0, 0, roomImg.width, roomImg.height);
   let borderColor = 0xffc0c0c0;
   let borderThickness = 1;
-  if (room.state === "key") {
+  if (room.state === "locked" && room.lockType === "key") {
     borderColor = room.color;
     borderThickness = myKeys.has(room.key) ? 3 : 2;
   }
   else if (SETTINGS.showCritOverlay && room.crit != null) {
-    borderColor = room.crit ? SETTINGS.colorCritTrue : SETTINGS.colorCritFalse;
+    borderColor = room.color;
     borderThickness = 2;
   }
 
@@ -845,11 +822,11 @@ function renderRoomForHUD(room, p1, p2, offsetH, offsetV, angle, entryFrom, prev
 
     overlay(OVERLAYS.minimapHUDCorridors, () => {
       let color = 0xffc0c0c0;
-      if (room.state === "key") {
+      if (room.state === "locked" && room.lockType === "key") {
         color = room.color;
       }
       else if (SETTINGS.showCritOverlay && room.crit != null) {
-        color = room.crit ? SETTINGS.colorCritTrue : SETTINGS.colorCritFalse;
+        color = room.color;
       }
 
       alt1.overLayLine(
@@ -991,11 +968,7 @@ function scanCompass() {
         }
       });
 
-      let color = 0xffa0663d;
-      if (playerRoom.crit === true)
-        color = SETTINGS.colorCritTrue;
-      else if (playerRoom.crit === false)
-        color = SETTINGS.colorCritFalse;
+      const color = playerRoom.color || 0xffa0663d;
       const colors = [0xffff0000, color, 0xffffffff, color];
       const dirs = ['north', 'east', 'south', 'west'];
 
@@ -1129,11 +1102,12 @@ function buildGrid() {
   const offsetX = 13;
   const offsetY = 14;
 
-  alt1.overLayText("MAP", appColor, 20, Math.floor(mapX + mapWidth / 2) - 40, mapY - 40, 1000);
+  // alt1.overLayText("MAP", appColor, 20, Math.floor(mapX + mapWidth / 2) - 40, mapY - 40, 1000);
   alt1.overLayRect(appColor, mapX, mapY, mapWidth, mapHeight, 1000, 1);
   // alt1.overLayRect(0xffff0000, mapX + mapPadding, mapY + mapPadding, mapWidth - 2 * mapPadding, mapWidth - 2 * mapPadding, 5000, 1);
 
   grid = [];
+  indexedRooms = {};
 
   for (let row = 0; row < GRID_HEIGHT; row++) {
 
@@ -1144,7 +1118,7 @@ function buildGrid() {
       const x = mapX + offsetX + col * (mapRoomSize + mapRoomGap);
       const y = mapY + offsetY + row * (mapRoomSize + mapRoomGap);
 
-      rowArray.push({
+      const room = {
         id: `${row}:${col}`,
         row, col,
         x, y,
@@ -1161,8 +1135,9 @@ function buildGrid() {
         east: null,
         south: null,
         west: null,
-        player: false
-      });
+      };
+      rowArray.push(room);
+      indexedRooms[room.id] = room;
 
       //alt1.overLayRect(0xff00ff00, x, y, mapRoomSize, mapRoomSize, 1000, 2);
     }
@@ -1171,8 +1146,6 @@ function buildGrid() {
   }
   scanDungeonMapFull();
 }
-
-let knownRooms, indexedRooms, unknownAdjacents, unknownRescans;
 
 function scanDungeonMapFull() {
   clearTimeout(timeouts.scanDungeonMap);
@@ -1184,17 +1157,7 @@ function scanDungeonMapFull() {
     return;
   }
 
-  indexedRooms = {};
   knownRooms = new Set();
-  unknownAdjacents = new Set();
-  unknownRescans = new Set();
-
-  for (let row = 0; row < GRID_HEIGHT; row++) {
-    for (let col = 0; col < GRID_WIDTH; col++) {
-      const room = grid[row][col];
-      indexedRooms[room.id] = room;
-    }
-  }
 
   for (const roomId in indexedRooms) {
     const room = indexedRooms[roomId];
@@ -1249,42 +1212,23 @@ function scanDungeonMapPartial() {
     for (let roomId of knownRooms) {
       const room = indexedRooms[roomId];
 
-      if (room.state !== 'visited')
+      if (room.state !== 'visited') {
+        if (SETTINGS.showScanOverlay && !room.scanShown) {
+          alt1.overLayRect(0xffff00ff, room.x , room.y, room.width, room.height, 1000, 1);
+          room.scanShown = true;
+        }
+
         setRoomState(room);
+      }
 
       //DEBUG
       // alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 2000, 1)
 
-      if (SETTINGS.showKeyOverlay && room.state == 'key') {
+      if (
+        (SETTINGS.showKeyOverlay && room.state === "locked" && room.lockType === "key") ||
+        (SETTINGS.showCritOverlay && room.crit != null)
+      ) {
         alt1.overLayRect(room.color, room.x, room.y, room.width, room.height, 2000, 1)
-      }
-
-      if (SETTINGS.showCritOverlay && room.crit != null) {
-        alt1.overLayRect(room.crit ? SETTINGS.colorCritTrue : SETTINGS.colorCritFalse, room.x, room.y, room.width, room.height, 2000, 1);
-      }
-    }
-
-    for (let roomId of unknownAdjacents) {
-      const room = indexedRooms[roomId];
-      setRoomState(room);
-
-      if (SETTINGS.showScanOverlay)
-        alt1.overLayRect(0xffff00ff, room.x, room.y, room.width, room.height, 600, 1)
-
-      if (room.state !== "unknown") {
-        knownRooms.add(room.id);
-      }
-    }
-
-    for (let roomId of unknownRescans) {
-      const room = indexedRooms[roomId];
-      setRoomState(room);
-
-      if (SETTINGS.showScanOverlay)
-        alt1.overLayRect(0xffff00ff, room.x, room.y, room.width, room.height, 600, 1)
-
-      if (room.state !== "unknown") {
-        knownRooms.add(room.id);
       }
     }
   });
@@ -1334,9 +1278,6 @@ function setRoomState(room) {
   const img = A1lib.capture(room.x, room.y, room.width, room.height);
   const bind = alt1.bindRegion(room.x, room.y, room.width, room.height);
 
-  const prevState = room.state;
-  room.state = 'unknown';
-
   const { state, corridors, boss } = ROOMS.find(r => {
     const matches = JSON.parse(alt1.bindFindSubImg(bind, r.icon, r.width, 0, 0, room.width, room.height));
     return matches.length > 0;
@@ -1345,8 +1286,6 @@ function setRoomState(room) {
   if (boss)
     console.log('Found boss room at', room.id);
 
-  if (state)
-    room.state = state;
 
   // if (SETTINGS.debug) {
   //   if (state)
@@ -1355,23 +1294,16 @@ function setRoomState(room) {
   //     console.log('Scanned', room.id, 'but found nothing');
   // }
 
-  if (room.state === "unknown") {
-    knownRooms.delete(room.id);
-    if (prevState && prevState !== "unknown") {
-      console.log('Room', room.id, 'state changed from', prevState, 'to unknown');
-      unknownRescans.add(room.id);
-    }
-  }
-  else {
-    knownRooms.add(room.id);
-    unknownAdjacents.delete(room.id);
-    unknownRescans.delete(room.id);
-  }
+  if (!state)
+    return console.log('Unable to determine state of room', room.id);
 
+  room.state = state;
+  knownRooms.add(room.id);
 
   room.capture = A1lib.encodeImageString(img, 0, 0, img.width, img.height);
   if (room.state === "visited") {
-    room.color = SETTINGS.colorKeyYes;
+    if (room.crit === null)
+      room.color = 0xffa0663d;
 
     // alt1.overLayText(corridors.map(c => c[0].toUpperCase()).join(''), 0xffffffff, 10, room.x + 6, room.y + 8, 1000);
 
@@ -1381,8 +1313,8 @@ function setRoomState(room) {
         const [rowOffset, colOffset] = ADJACENCE_OFFSETS[dir];
         const adjacentRoom = indexedRooms[`${room.row + rowOffset}:${room.col + colOffset}`];
         room[dir] = adjacentRoom;
-        if (adjacentRoom?.state === "unknown") {
-          unknownAdjacents.add(adjacentRoom.id);
+        if (adjacentRoom) {
+          knownRooms.add(adjacentRoom.id);
           console.log('Found adjacent of', room.id, dir, 'at', adjacentRoom.id)
         }
       }
@@ -1392,46 +1324,62 @@ function setRoomState(room) {
       highlightCorridors(room);
   }
   else if (room.state === "locked") {
-    room.color = SETTINGS.colorKeyNo;
-
     // debugLockedRoomCaptures.add(
     //   A1lib.encodeImageString(img, 0, 0, img.width, img.height)
     // )
-    for (const key of KEY_HL_ICONS) {
-      const matches = JSON.parse(alt1.bindFindSubImg(bind, key.icon, key.width, 0, 0, room.width, room.height));
-      const match = matches[0];
 
-      if (match) {
-        room.state = "key"
-
-        myKeys.add(key.name.toLowerCase());
-        room.color = SETTINGS.colorKeyYes
-
-        if (prevState !== "key")
-          console.log(`Key scan: highlighted ${key.name} @ ${room.id} (owned)`);
-        break;
+    let scans = 0;
+    if (!room.lockType) {
+      scans++;
+      const matches = JSON.parse(alt1.bindFindSubImg(bind, GENERIC_LOCK_ICON.icon, GENERIC_LOCK_ICON.width, 0, 0, room.width, room.height));
+      if (matches.length > 0) {
+        room.lockType = "generic";
+        room.color = 0xffee6f00;
+        console.log(`Found generic lock @ ${room.id}`);
       }
     }
 
-    if (room.state !== "key") {
+    if (!room.lockType) {
+      scans++;
+      for (const skill of SKILL_ICONS) {
+        const matches = JSON.parse(alt1.bindFindSubImg(bind, skill.icon, skill.width, 0, 0, room.width, room.height));
+        if (matches.length > 0) {
+          room.lockType = "skill"
+          room.skill = skill.name;
+          room.color = 0xffee6f00;
+
+          console.log(`Found ${skill.name} skill door @ ${room.id}`);
+          break;
+        }
+      }
+    }
+
+    if (!room.lockType || (room.lockType === "key" && !myKeys.has(room.key))) {
+      scans++;
+      for (const key of KEY_HL_ICONS) {
+        const matches = JSON.parse(alt1.bindFindSubImg(bind, key.icon, key.width, 0, 0, room.width, room.height));
+        if (matches.length > 0) {
+          room.lockType = "key"
+          room.key = key.name.toLowerCase();
+          room.color = SETTINGS.colorKeyYes
+          myKeys.add(room.key);
+
+          console.log(`Key scan: highlighted ${key.name} @ ${room.id} (owned)`);
+          break;
+        }
+      }
+    }
+
+    if (!room.lockType) {
+      scans++;
       for (const key of KEY_ICONS) {
         const matches = JSON.parse(alt1.bindFindSubImg(bind, key.icon, key.width, 0, 0, room.width, room.height));
-        const match = matches[0];
-
-        // if we have the key, set the color to green, oterwise set to red
-        if (match) {
-          room.state = "key"
+        if (matches.length > 0) {
+          room.lockType = "key"
           room.key = key.name.toLowerCase();
-          room.color = myKeys.has(room.key) ?
-            SETTINGS.colorKeyYes :
-            SETTINGS.colorKeyNo
+          room.color = SETTINGS.colorKeyNo;
 
-          if (prevState !== "key") {
-            if (myKeys.has(room.key))
-              console.warn(`Key scan: plain ${key.name} @ ${room.id} (owned) - HL scan miss?`);
-            else
-              console.log(`Key scan: plain ${key.name} @ ${room.id} (not owned)`);
-          }
+          console.log(`Key scan: plain ${key.name} @ ${room.id} (not owned)`);
           break;
         }
       }
@@ -1611,8 +1559,10 @@ function scanInterface() {
 function showStats() {
   let visited = 0;
   let unknown = 0;
-  let locked = 0;
+
   let keys = 0;
+  let skills = 0;
+  let generic = 0;
 
   let deadEnds = 0;
   let branches = 0;
@@ -1637,10 +1587,17 @@ function showStats() {
           unknown++;
           break;
         case "locked":
-          locked++;
-          break;
-        case "key":
-          keys++;
+          switch (room.lockType) {
+            case "key":
+              keys++;
+              break;
+            case "skill":
+              skills++;
+              break;
+            case "generic":
+              generic++;
+              break;
+          }
           break;
         case "unreachable":
           unreachable++;
@@ -1663,7 +1620,7 @@ function showStats() {
   }
 
 
-  const total = visited + unknown + locked + keys;
+  const total = visited + unknown + keys + skills + generic;
 
   const completion = total > 0 ? Math.round((visited / total) * 100) : 0;
 
@@ -1712,7 +1669,7 @@ function showStats() {
 
   document.getElementById("statVisited").innerText = visited;
   document.getElementById("statUnknown").innerText = unknown;
-  document.getElementById("statLocked").innerText = keys + " keys + " + locked + " locked";
+  document.getElementById("statLocked").innerText = `${keys} keys + ${skills} skills + ${generic} generic`;
   document.getElementById("statUnreachable").innerText = unreachable;
 
   document.getElementById("statDeadEnds").innerText = deadEnds;
@@ -1751,10 +1708,7 @@ function getUnreachableRooms() {
         const room = fakeGrid[row][col];
 
         // locked/key become visited
-        if (
-          room.state === "locked" ||
-          room.state === "key"
-        ) {
+        if (room.state === "locked") {
 
           room.state = "visited";
 

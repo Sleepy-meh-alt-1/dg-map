@@ -77,6 +77,12 @@ const COMPASS = {
   height: 4
 }
 
+const GENERIC_LOCK_ICON =   {
+  name: "Generic Lock",
+  icon: "Axoq/1GNq/9Rjav/AAAAAAAAAAAAAAAAAxoq/1ORr/9Piaf/AAAAAAAAAAAAAAAAAhcn/1GNq/9Rjav/YZu5/2Gbuf8AAAAAAAAAAAAAAABPiaf/XJm4/1yZuP84aoX/",
+  width: 6,
+  height: 4
+}
 
 const SKILL_ICONS = [
   {
