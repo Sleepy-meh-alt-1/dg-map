@@ -15,8 +15,8 @@ const RIDDLES = [
       img: "https://runescape.wiki/images/Bowstring_%28o%29.png?70403",
   },
   {
-      riddle: "Though I am light, I can not illuminate the dark.",
-      search: "i can not illuminate the dark",
+      riddle: "Though I am light, I cannot illuminate the dark.",
+      search: "illuminate the dark",
       item: "Feather | Table",
       img: "https://runescape.wiki/images/Feather_%28o%29.png?811d4",
   },
