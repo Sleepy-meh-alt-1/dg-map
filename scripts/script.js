@@ -39,6 +39,20 @@ const SETTINGS = {
 
   debug: false,
 
+
+  showStatsOverlay: true,
+  statsOverlayPosition: {},
+
+  statsOverlay_visited: false,
+  statsOverlay_unknown: false,
+  statsOverlay_locked: false,
+  statsOverlay_unreachable: false,
+  statsOverlay_deadEnds: false,
+  statsOverlay_branches: false,
+  statsOverlay_completion: false,
+  statsOverlay_time: false,
+  statsOverlay_projected: false,
+  statsOverlay_rpm: false,
 };
 
 const DEBUG = {
@@ -64,6 +78,8 @@ const timeouts = {
   highlightGatestone: null,
   clearTooltip: null,
   scanCompass: null,
+  setHUDPosition: null,
+  setStatsPosition: null,
 }
 
 
@@ -98,6 +114,8 @@ const OVERLAYS = {
   minimapHUD: 'minimapHUD',
   minimapHUDCorridors: 'minimapHUDCorridors',
   minimapKey: 'minimapKey',
+  stats: 'stats',
+  hudPosition: 'hudPosition',
   debug: 'debug',
   debugMap: 'debugMap',
   debugCompass: 'debugCompass',
@@ -251,9 +269,10 @@ function handleAlt1Pressed(event) {
     return window.location.reload();
 
   if (hudPositionStartAt) {
-    SETTINGS.hudPosition = { x, y };
+    SETTINGS[hudPositionTarget] = { x, y };
     clearTimeout(timeouts.setHUDPosition);
     hudPositionStartAt = null;
+    hudPositionTarget = null;
     alt1.clearTooltip();
     return;
   }
@@ -1165,7 +1184,7 @@ function scanDungeonMapFull() {
     setRoomState(room);
   }
 
-  showStats()
+  updateStats()
 
   const end = performance.now();
 
@@ -1238,7 +1257,7 @@ function scanDungeonMapPartial() {
 
   });
 
-  showStats()
+  updateStats()
 
   const end = performance.now();
 
@@ -1612,7 +1631,8 @@ function scanInterface() {
   console.log(`scanInterface finished in ${end - start} ms`, dgIcon);
 }
 
-function showStats() {
+let stats;
+function updateStats() {
   let visited = 0;
   let unknown = 0;
 
@@ -1625,7 +1645,7 @@ function showStats() {
 
   let unreachable = 0;
 
-  let rpm = "-";
+  let rpm = 0;
 
   for (let row = 0; row < GRID_HEIGHT; row++) {
     for (let col = 0; col < GRID_WIDTH; col++) {
@@ -1691,7 +1711,7 @@ function showStats() {
     const minutes = seconds / 60;
 
     if (minutes > 0) {
-      rpm = (visited / minutes).toFixed(2);
+      rpm = ((visited - 1) / minutes).toFixed(2);
     }
   }
 
@@ -1720,6 +1740,25 @@ function showStats() {
     }
   }
 
+  const targetRpm = TARGET_TIME_SECONDS && (total / (TARGET_TIME_SECONDS / 60)) || 0;
+
+  const behindTargetSince = targetRpm && rpm < targetRpm ? (stats?.behindTargetSince || Date.now()) : null;
+
+  stats = {
+    visited,
+    unknown,
+    locked: `${keys} keys + ${skills} skills + ${generic} generic`,
+    unreachable,
+    deadEnds,
+    branches,
+    completion: `${completion}%`,
+    time: elapsed,
+    projected,
+    targetRpm,
+    rpm,
+    behindTargetSince,
+  }
+
   document.getElementById("statVisited").innerText = visited;
   document.getElementById("statUnknown").innerText = unknown;
   document.getElementById("statLocked").innerText = `${keys} keys + ${skills} skills + ${generic} generic`;
@@ -1733,8 +1772,75 @@ function showStats() {
   document.getElementById("statProjected").innerText = projected;
   document.getElementById("statRPM").innerText = rpm;
 
+  if (SETTINGS.showStatsOverlay) {
+    overlay(OVERLAYS.stats, () => {
+      renderStatsOverlay();
+    });
+  }
 }
 
+function renderStatsOverlay({ x, y } = {}) {
+  const barWidth = 250;
+  const posX = x || SETTINGS.statsOverlayPosition?.x || Math.round(alt1.rsWidth / 2 - barWidth / 2);
+  const posY = y || SETTINGS.statsOverlayPosition?.y || 50;
+  let textOffsetY = 0;
+
+  if (stats.targetRpm) {
+    const img = withCanvas((ctx, width, height) => {
+      const barHeight = height - 10;
+
+      ctx.fillStyle = "#333";
+      ctx.fillRect(0, (height - barHeight) / 2, width, barHeight);
+
+      const rpmDiff = stats.rpm - stats.targetRpm;
+
+      let color;
+      if (rpmDiff >= 1)
+        color = "#0f0";
+      else if (rpmDiff >= 0)
+        color = "#ff0";
+      else
+        color = "#f00";
+
+      ctx.fillStyle = color;
+      const maxRpm = stats.targetRpm * 1.5;
+      const rpmWidth = Math.min(stats.rpm / maxRpm, 1) * width;
+      ctx.fillRect(0, (height - barHeight) / 2, rpmWidth, barHeight);
+
+      ctx.fillStyle = "#a11";
+      const targetX = Math.min(stats.targetRpm / maxRpm, 1) * width;
+      ctx.fillRect(targetX - 2, 0, 4, height);
+
+    }, barWidth, 35);
+    textOffsetY += img.height + 5;
+
+    alt1.overLayImage(posX, posY, A1lib.encodeImageString(img), img.width, 1000);
+
+    if (stats.behindTargetSince) {
+      const elapsed = Math.floor((Date.now() - stats.behindTargetSince) / 1000);
+      if (elapsed > 0)
+        alt1.overLayText(`${elapsed}s`, 0xffff0000, 17, Math.round(posX + img.width / 1.5 + 15), posY + 2, 1000);
+    }
+  }
+
+  let idx = 0;
+  for (const key in stats) {
+    if (!SETTINGS[`statsOverlay_${key}`]) continue;
+
+    const text = `${key[0].toUpperCase() + key.slice(1)}: ${stats[key]}`;
+    alt1.overLayText(text, 0xffffffff, 14, posX, posY + textOffsetY + idx * 20, 1000);
+    idx++;
+  }
+}
+
+function withCanvas(callback, width, height) {
+  const canvas = document.createElement("canvas");
+  canvas.width = width;
+  canvas.height = height;
+  const ctx = canvas.getContext("2d");
+  callback(ctx, width, height);
+  return ctx.getImageData(0, 0, width, height);
+}
 
 function findNearestRoom(predicate, { startRoom = null, traversal = "grid" } = {}) {
   const queue = [startRoom || scanPlayerRoom()];
@@ -1873,15 +1979,25 @@ document.querySelectorAll(".panel .panel-toggle").forEach(button => {
 });
 
 let hudPositionStartAt = null;
-function waitForHUDPosition() {
+let hudPositionTarget = null;
+function waitForHUDPosition(target, description, renderPreview) {
+  clearTimeout(timeouts.setHUDPosition);
+
   if (hudPositionStartAt === null) {
     hudPositionStartAt = Date.now();
+    hudPositionTarget = target;
   }
   const remaining = 30 - (Date.now() - hudPositionStartAt) / 1000;
 
   if (remaining > 0) {
-    alt1.setTooltip(`Position your mouse where you want the HUD center to be, and press alt+1 to set position.\nFor best effect, position it centered on your character. (${Math.round(remaining)}s)`);
-    timeouts.setHUDPosition = setTimeout(waitForHUDPosition, 100);
+    alt1.setTooltip(`${description} (${Math.round(remaining)}s)`);
+    const pos = A1lib.getMousePosition();
+    if (pos && renderPreview) {
+      overlay(OVERLAYS.hudPosition, () => {
+          renderPreview(pos.x,  pos.y);
+      });
+    }
+    timeouts.setHUDPosition = setTimeout(waitForHUDPosition.bind(null, hudPositionTarget, description, renderPreview), 100);
   }
   else {
     hudPositionStartAt = null;
@@ -1891,11 +2007,38 @@ function waitForHUDPosition() {
 
 document.getElementById("setHUDPosition").addEventListener("click", () => {
   if (!hudPositionStartAt) {
-    waitForHUDPosition();
+    waitForHUDPosition(
+      "hudPosition",
+      "Position your mouse where you want the HUD to be, and press alt+1 to set position.\nFor best effect, position it centered on your character.",
+      (x, y) => {
+        const size = mapRoomSize * SETTINGS.hudRoomScale;
+        alt1.overLayRect(0xffffff00, x - Math.round(size/2), y - Math.round(size/2), Math.round(size), Math.round(size), 500, 2);
+      }
+    );
+
   }
   else {
     clearTimeout(timeouts.setHUDPosition);
     hudPositionStartAt = null;
+    hudPositionTarget = null;
+    alt1.clearTooltip();
+  }
+});
+
+document.getElementById("setStatsPosition").addEventListener("click", () => {
+  if (!hudPositionStartAt) {
+    waitForHUDPosition(
+      "statsOverlayPosition",
+      "Position your mouse where you want the stats to be, and press alt+1 to set position.",
+      (x, y) => {
+        renderStatsOverlay({ x, y });
+      }
+    );
+  }
+  else {
+    clearTimeout(timeouts.setHUDPosition);
+    hudPositionStartAt = null;
+    hudPositionTarget = null;
     alt1.clearTooltip();
   }
 });
@@ -1961,6 +2104,16 @@ const SETTING_CHANGED_HANDLERS = {
     else {
       clearTimeout(timeouts.highlightGatestone);
       clearOverlay(OVERLAYS.gatestone);
+    }
+  },
+
+  showStatsOverlay: value => {
+    if (value) {
+      document.getElementById("stats").classList.add("show-checkboxes");
+    }
+    else {
+      document.getElementById("stats").classList.remove("show-checkboxes");
+      clearOverlay(OVERLAYS.stats);
     }
   },
 

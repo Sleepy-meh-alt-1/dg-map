@@ -108,6 +108,19 @@
       border-top: 1px solid #333;
       margin: 8px 0;
     }
+
+    #stats label {
+      justify-content: flex-start;
+    }
+    #stats.show-checkboxes input[type="checkbox"] {
+      display: inline-block;
+    }
+    #stats input[type="checkbox"] {
+      display: none;
+      height: 11px;
+      width: 11px;
+      margin: 1px;
+    }
   </style>
 
 </head>
@@ -119,20 +132,20 @@
       <button class="panel-toggle"></button>
     </div>
     <div class="panel-content" style="gap:2px">
-      <div>Visited: <span id="statVisited">-</span></div>
-      <div>Unknown: <span id="statUnknown">-</span></div>
-      <div>Locked: <span id="statLocked">-</span></div>
-      <div>Unreachable: <span id="statUnreachable">-</span></div>
+      <label><input type="checkbox" data-setting="statsOverlay_visited" disabled> Visited: <span id="statVisited">-</span></label>
+      <label><input type="checkbox" data-setting="statsOverlay_unknown" disabled> Unknown: <span id="statUnknown">-</span></label>
+      <label><input type="checkbox" data-setting="statsOverlay_locked" disabled> Locked: <span id="statLocked">-</span></label>
+      <label><input type="checkbox" data-setting="statsOverlay_unreachable" disabled> Unreachable: <span id="statUnreachable">-</span></label>
       <hr>
 
-      <div>Dead Ends: <span id="statDeadEnds">-</span></div>
-      <div>Branches: <span id="statBranches">-</span></div>
+      <label><input type="checkbox" data-setting="statsOverlay_deadEnds" disabled> Dead Ends: <span id="statDeadEnds">-</span></label>
+      <label><input type="checkbox" data-setting="statsOverlay_branches" disabled> Branches: <span id="statBranches">-</span></label>
       <hr>
 
-      <div>Completion: <span id="statCompletion">-</span>%</div>
-      <div>Time: <span id="statTime">-</span></div>
-      <div>Projected: <span id="statProjected">-</span></div>
-      <div>Rooms/Min: <span id="statRPM">-</span></div>
+      <label><input type="checkbox" data-setting="statsOverlay_completion" disabled> Completion: <span id="statCompletion">-</span>%</label>
+      <label><input type="checkbox" data-setting="statsOverlay_time" disabled> Time: <span id="statTime">-</span></label>
+      <label><input type="checkbox" data-setting="statsOverlay_projected" disabled> Projected: <span id="statProjected">-</span></label>
+      <label><input type="checkbox" data-setting="statsOverlay_rpm" disabled> Rooms/Min: <span id="statRPM">-</span></label>
     </div>
   </div>
 
@@ -166,10 +179,14 @@
       <label>Crit Path False <input type="color" data-setting="colorCritFalse" disabled></label>
 
       <hr>
+      <label>Show Stats Overlay <input type="checkbox" data-setting="showStatsOverlay" disabled></label>
+      <button id="setStatsPosition">Set stats overlay position</button>
+
+      <hr>
       <label>Show Minimap HUD <input type="checkbox" data-setting="showMinimapHUD" disabled></label>
       <label>HUD Room Scale <input type="range" data-setting="hudRoomScale" min="1" max="5" step="0.1" disabled></label>
       <label>HUD Room Steps <input type="range" data-setting="hudRoomSteps" min="1" max="10" disabled></label>
-      <button id="setHUDPosition">Set HUD position</button>
+      <button id="setHUDPosition">Set minimap HUD position</button>
 
       <hr>
       <label>
