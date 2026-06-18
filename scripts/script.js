@@ -1711,14 +1711,16 @@ function updateStats() {
     const minutes = seconds / 60;
 
     if (minutes > 0) {
-      rpm = ((visited - 1) / minutes).toFixed(2);
+      rpm = ((visited) / minutes).toFixed(2);
     }
   }
 
 
+  let elapsedSeconds
+
   if (dungeonStartTime && completion > 0) {
 
-    const elapsedSeconds = Math.floor((Date.now() - dungeonStartTime) / 1000);
+    elapsedSeconds = Math.floor((Date.now() - dungeonStartTime) / 1000);
 
     const mins = Math.floor(elapsedSeconds / 60);
 
@@ -1748,11 +1750,13 @@ function updateStats() {
     visited,
     unknown,
     locked: `${keys} keys + ${skills} skills + ${generic} generic`,
+    lockedCount: keys + skills + generic, //+hidden locked
     unreachable,
     deadEnds,
     branches,
     completion: `${completion}%`,
     time: elapsed,
+    elapsedSeconds,
     projected,
     targetRpm,
     rpm,
@@ -1785,43 +1789,111 @@ function renderStatsOverlay({ x, y } = {}) {
   const posY = y || SETTINGS.statsOverlayPosition?.y || 50;
   let textOffsetY = 0;
 
-  if (stats.targetRpm) {
-    const img = withCanvas((ctx, width, height) => {
-      const barHeight = height - 10;
+if (stats.targetRpm) {
+  const TARGET_TIME_SECONDS = SETTINGS.goalMinutes * 60 + SETTINGS.goalSeconds;
 
-      ctx.fillStyle = "#333";
-      ctx.fillRect(0, (height - barHeight) / 2, width, barHeight);
+  // credits to Notaphily! 
+  const roomRanges = {
+    small: { min: 10, max: 16 },
+    medium: { min: 23, max: 32 },
+    large: { min: 50, max: 64 }
+  };
 
-      const rpmDiff = stats.rpm - stats.targetRpm;
+  const floorRange = roomRanges[SETTINGS.floorSize] || roomRanges.large;
+  const minTargetRpm = floorRange.min / (TARGET_TIME_SECONDS / 60);
+  const maxTargetRpm = floorRange.max / (TARGET_TIME_SECONDS / 60);
 
-      let color;
-      if (rpmDiff >= 1)
-        color = "#0f0";
-      else if (rpmDiff >= 0)
-        color = "#ff0";
-      else
-        color = "#f00";
+  const padding = 1;
+  const minRpmBar = Math.max(0, minTargetRpm - padding);
+  const maxRpmBar = maxTargetRpm + padding;
 
-      ctx.fillStyle = color;
-      const maxRpm = stats.targetRpm * 1.5;
-      const rpmWidth = Math.min(stats.rpm / maxRpm, 1) * width;
-      ctx.fillRect(0, (height - barHeight) / 2, rpmWidth, barHeight);
+  const rpmToX = (rpm, width) => Math.max(0, Math.min(1, (rpm - minRpmBar) / (maxRpmBar - minRpmBar))) * width;
 
-      ctx.fillStyle = "#a11";
-      const targetX = Math.min(stats.targetRpm / maxRpm, 1) * width;
-      ctx.fillRect(targetX - 2, 0, 4, height);
+  //TODO calc hidden locked doors
+  const reachableRooms = floorRange.max - stats.unreachable;
+  const dynamicMaxTargetRpm = reachableRooms  / (TARGET_TIME_SECONDS / 60);
+  const dynamicMinTargetRpm = Math.max(floorRange.min, stats.visited + stats.lockedCount /*+  hidden locked*/) / (TARGET_TIME_SECONDS / 60);
 
-    }, barWidth, 35);
-    textOffsetY += img.height + 5;
+  const img = withCanvas((ctx, width, height) => {
+    const barHeight = 25;
+    const barY = 17;
 
-    alt1.overLayImage(posX, posY, A1lib.encodeImageString(img), img.width, 1000);
+    ctx.fillStyle = "#333";
+    ctx.fillRect(0, barY, barWidth, barHeight);
+
+    const minTargetX = rpmToX(minTargetRpm, barWidth);
+    const maxTargetX = rpmToX(maxTargetRpm, barWidth);
+    const dynamicMinX = rpmToX(dynamicMinTargetRpm, barWidth);
+    const dynamicMaxX = rpmToX(dynamicMaxTargetRpm, barWidth);
+
+    let color;
+    if (stats.rpm >= dynamicMaxTargetRpm)
+      color = "#0f0";
+    else if (stats.rpm >= dynamicMinTargetRpm)
+      color = "#ff0";
+    else
+      color = "#f00";
+
+    ctx.fillStyle = color;
+
+    const rpmWidth = rpmToX(stats.rpm, barWidth);
+    ctx.fillRect(0, barY, rpmWidth, barHeight);
+
+    ctx.fillStyle = "#000000";
+
+    // markers
+    //ctx.fillRect(minTargetX - 1, 0, 1, height);
+    //ctx.fillRect(maxTargetX - 1, 0, 1, height);
+    ctx.fillRect(dynamicMaxX - 1, 0, 1, height);
+    ctx.fillRect(dynamicMinX - 1, 0, 1, height);
+
+    ctx.fillStyle = "#ffffff";
+    ctx.font = "12px Arial";
+
+    //labels
+    ctx.textAlign = "center";
+    ctx.fillText(dynamicMinTargetRpm.toFixed(2), dynamicMinX, 12);
+    ctx.fillText(dynamicMaxTargetRpm.toFixed(2), dynamicMaxX, 12);
+
+    ctx.textAlign = "left";
+    ctx.fillText(stats.rpm, rpmWidth, 32);
+
+    /* range labels
+    ctx.textAlign = "left";
+    ctx.fillText(minRpmBar.toFixed(2), 2, barY + barHeight / 2 + 4);
+
+    ctx.textAlign = "right";
+    ctx.fillText(maxRpmBar.toFixed(2), width - 2, barY + barHeight / 2 + 4);
+    */
 
     if (stats.behindTargetSince) {
       const elapsed = Math.floor((Date.now() - stats.behindTargetSince) / 1000);
-      if (elapsed > 0)
-        alt1.overLayText(`${elapsed}s`, 0xffff0000, 17, Math.round(posX + img.width / 1.5 + 15), posY + 2, 1000);
+
+      if (elapsed > 0) {
+        ctx.fillStyle = "#ff0000";
+
+        ctx.fillText(
+          `${elapsed}s`,
+          width - 300,
+          12
+        );
+      }
     }
-  }
+
+  }, 300, 60);
+
+  textOffsetY += img.height + 5;
+
+  alt1.overLayImage(
+    posX,
+    posY,
+    A1lib.encodeImageString(img),
+    img.width,
+    1000
+  );
+
+
+}
 
   let idx = 0;
   for (const key in stats) {
