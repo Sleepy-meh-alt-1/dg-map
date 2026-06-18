@@ -46,6 +46,7 @@ const SETTINGS = {
   statsOverlay_visited: false,
   statsOverlay_unknown: false,
   statsOverlay_locked: false,
+  statsOverlay_inferred: false,
   statsOverlay_unreachable: false,
   statsOverlay_deadEnds: false,
   statsOverlay_branches: false,
@@ -91,7 +92,8 @@ let partySize = null;
 let gatestone1Location = null;
 let dungeonStartTime = null;
 let inFloor = false;
-let myKeys;
+let currentKeys;
+let currentKeyLocks;
 let playerPath = [];
 let GRID_WIDTH = 8, GRID_HEIGHT = 8, grid, mapWidth = 280, mapHeight = 280;
 let mapX = 0, mapY = 0;
@@ -425,6 +427,28 @@ async function checkLine(line) {
     lastLines.pop();
   }
 
+  const keyMatch = line.match(/Your party (found|used) a key: (\w+) (\w+) key/i);
+  if (keyMatch) {
+    const action = keyMatch[1].toLowerCase();
+    const color = keyMatch[2].toLowerCase();
+    const shape = keyMatch[3].toLowerCase();
+
+    const keyName = `${color} ${shape} key`;
+
+    console.log(action, keyName)
+
+    if (action === "found") {
+      currentKeys.add(keyName);
+    }
+    else if (action === "used") {
+      currentKeys.delete(keyName);
+      currentKeyLocks.delete(keyName);
+    }
+
+    return;
+  }
+
+
   const critMatch = line.match(/level (\d+) (\w+)/i);
   if (critMatch) {
     const level = Number(critMatch[1]);
@@ -578,7 +602,8 @@ function startFloor() {
   playerIndex = playerIndex || 0;
   partySize = partySize || 1;
   gatestone1Location = null;
-  myKeys = new Set();
+  currentKeys = new Set();
+  currentKeyLocks = new Set();
   playerPath = [];
   failedGoal = false;
   buildGrid();
@@ -596,7 +621,8 @@ function stopFloor() {
   clearTimeouts();
   scanInterface();
   inFloor = false
-  myKeys = new Set();
+  currentKeys = new Set();
+  currentKeyLocks = new Set();
   playerPath = [];
   grid = []
   indexedRooms = {};
@@ -766,7 +792,7 @@ function roomImageForHUD(room, angle) {
   let borderThickness = 1;
   if (room.state === "locked" && room.lockType === "key") {
     borderColor = room.color;
-    borderThickness = myKeys.has(room.key) ? 3 : 2;
+    borderThickness = room.keyHeld ? 3 : 2;
   }
   else if (SETTINGS.showCritOverlay && room.crit != null) {
     borderColor = room.color;
@@ -1369,6 +1395,9 @@ function setRoomState(room) {
     if (room.crit === null)
       room.color = 0xffa0663d;
 
+    if (room.key)
+      currentKeyLocks.delete(room.key);
+
     // alt1.overLayText(corridors.map(c => c[0].toUpperCase()).join(''), 0xffffffff, 10, room.x + 6, room.y + 8, 1000);
 
     if (corridors?.length) {
@@ -1429,7 +1458,7 @@ function setRoomState(room) {
       }
     }
 
-    if (!room.lockType || (room.lockType === "key" && !myKeys.has(room.key))) {
+    if (!room.lockType || (room.lockType === "key" && !room.keyHeld)) {
       scans++;
       for (const key of KEY_HL_ICONS) {
         const matches = JSON.parse(alt1.bindFindSubImg(bind, key.icon, key.width, 0, 0, room.width, room.height));
@@ -1437,7 +1466,9 @@ function setRoomState(room) {
           room.lockType = "key"
           room.key = key.name.toLowerCase();
           room.color = SETTINGS.colorKeyYes
-          myKeys.add(room.key);
+          room.keyHeld = true;
+          currentKeys.add(room.key);
+          currentKeyLocks.add(room.key);
 
           console.log(`Key scan: highlighted ${key.name} @ ${room.id} (owned)`);
           break;
@@ -1453,6 +1484,7 @@ function setRoomState(room) {
           room.lockType = "key"
           room.key = key.name.toLowerCase();
           room.color = SETTINGS.colorKeyNo;
+          currentKeyLocks.add(room.key);
 
           console.log(`Key scan: plain ${key.name} @ ${room.id} (not owned)`);
           break;
@@ -1745,12 +1777,14 @@ function updateStats() {
   const targetRpm = TARGET_TIME_SECONDS && (total / (TARGET_TIME_SECONDS / 60)) || 0;
 
   const behindTargetSince = targetRpm && rpm < targetRpm ? (stats?.behindTargetSince || Date.now()) : null;
+  const inferredKeyDoors = new Set([...currentKeys].filter(k => !currentKeyLocks.has(k)));
 
   stats = {
     visited,
     unknown,
     locked: `${keys} keys + ${skills} skills + ${generic} generic`,
-    lockedCount: keys + skills + generic, //+hidden locked
+    lockedCount: keys + skills + generic,
+    inferred: inferredKeyDoors.size,
     unreachable,
     deadEnds,
     branches,
@@ -1767,6 +1801,9 @@ function updateStats() {
   document.getElementById("statUnknown").innerText = unknown;
   document.getElementById("statLocked").innerText = `${keys} keys + ${skills} skills + ${generic} generic`;
   document.getElementById("statUnreachable").innerText = unreachable;
+  const inferredEl = document.getElementById("statInferred");
+  inferredEl.innerText = stats.inferred;
+  inferredEl.title = stats.inferred > 0 ? `Inferred locked rooms:\n${[...inferredKeyDoors].join('\n')}` : '';
 
   document.getElementById("statDeadEnds").innerText = deadEnds;
   document.getElementById("statBranches").innerText = branches;
@@ -1812,7 +1849,7 @@ if (stats.targetRpm) {
   //TODO calc hidden locked doors
   const reachableRooms = floorRange.max - stats.unreachable;
   const dynamicMaxTargetRpm = reachableRooms  / (TARGET_TIME_SECONDS / 60);
-  const dynamicMinTargetRpm = Math.max(floorRange.min, stats.visited + stats.lockedCount /*+  hidden locked*/) / (TARGET_TIME_SECONDS / 60);
+  const dynamicMinTargetRpm = Math.max(floorRange.min, stats.visited + stats.lockedCount + stats.inferred) / (TARGET_TIME_SECONDS / 60);
 
   const img = withCanvas((ctx, width, height) => {
     const barHeight = 25;
