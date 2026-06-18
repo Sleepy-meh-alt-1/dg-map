@@ -31,6 +31,7 @@ const SETTINGS = {
 
   alt1TogglePartyOverlay: false,
   alt1ToggleHUD: true,
+  shareFloorData: false,
 
   goalMinutes: 0,
   goalSeconds: 0,
@@ -421,6 +422,7 @@ async function checkLine(line) {
   // console.log(line)
   lastLines.unshift(line);
 
+  console.log(SETTINGS.shareFloorData)
   if (lastLines.length > 11) {
     lastLines.pop();
   }
@@ -591,7 +593,50 @@ function startFloor() {
 }
 
 function stopFloor() {
-  console.log('Stopping floor');
+
+  if (SETTINGS.shareFloorData){
+const WEBHOOK_URL =
+  "https://script.google.com/macros/s/AKfycbz-2reAQfoCRHXPfuU9d6Viz3ryx6RT_FsAxKqPN6hBy26L20GE40H1JjNY-PeNJuRA/exec";
+
+
+  // send data of grid and stats to a spreadsheet
+
+  const serializableGrid = grid.map(row =>
+  row.map(room => ({
+    id: room.id,
+    row: room.row,
+    col: room.col,
+
+    state: room.state,
+    lockType: room.lockType,
+    key: room.key,
+    skill: room.skill,
+    crit: room.crit,
+
+    north: room.north?.id ?? null,
+    east: room.east?.id ?? null,
+    south: room.south?.id ?? null,
+    west: room.west?.id ?? null
+  }))
+);
+  const floorData = {
+    timestamp: new Date().toISOString(),
+    stats,
+    serializableGrid
+  };
+
+  fetch(WEBHOOK_URL, {
+    method: "POST",
+    mode: "no-cors",
+    headers: {
+      "Content-Type": "text/plain"
+    },
+    body: JSON.stringify(floorData)
+  });
+
+
+  }
+  
   clearAllOverlays();
   clearTimeouts();
   scanInterface();
