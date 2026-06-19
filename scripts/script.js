@@ -141,7 +141,7 @@ const TEAM_MEMBER_COLORS = [
   [210, 53, 0],
   [0, 137, 133],
   [72, 129, 0],
-  [145, 150, 37],
+  [145, 150, 0],
   [109, 134, 95],
 ]
 
@@ -1714,16 +1714,16 @@ function scanInterface() {
           member.name = text;
         }
 
-        if (SETTINGS.debug) {
+        if (localStorage.debugOCR) {
           overlay(OVERLAYS.default, () => {
-            // const upscaled = processImage(img, { scale: 5 })
-            // alt1.overLayImage(
-            //   Math.round(alt1.rsWidth / 2 - upscaled.width / 2),
-            //   Math.round(alt1.rsHeight *.3 - upscaled.height / 2) + i * (upscaled.height + 5),
-            //   A1lib.encodeImageString(upscaled, 0, 0, upscaled.width, upscaled.height),
-            //   upscaled.width,
-            //   10000,
-            // )
+            const upscaled = processImage(img, { scale: 5 })
+            alt1.overLayImage(
+              Math.round(alt1.rsWidth / 2 - upscaled.width / 2),
+              Math.round(alt1.rsHeight *.3 - upscaled.height / 2) + i * (upscaled.height + 5),
+              A1lib.encodeImageString(upscaled, 0, 0, upscaled.width, upscaled.height),
+              upscaled.width,
+              10000,
+            )
 
             alt1.overLayRect(
               0xffff00ff,
