@@ -1584,7 +1584,10 @@ function readChatboxName() {
   const posY = alt1.rsHeight - 28;
   const width = 250;
   const height = 24;
-  alt1.overLayRect(0xffff0000, posX, posY, width, height, 10000, 1);
+
+  if (SETTINGS.debug) {
+    alt1.overLayRect(0xffff0000, posX, posY, width, height, 10000, 1);
+  }
   const { text: name, debugArea} = OCR.findReadLine(
     A1lib.capture(posX, posY, width, height),
     FONTS.chatbox_12pt, [
@@ -1711,36 +1714,38 @@ function scanInterface() {
           member.name = text;
         }
 
-        overlay(OVERLAYS.default, () => {
-          // const upscaled = processImage(img, { scale: 5 })
-          // alt1.overLayImage(
-          //   Math.round(alt1.rsWidth / 2 - upscaled.width / 2),
-          //   Math.round(alt1.rsHeight *.3 - upscaled.height / 2) + i * (upscaled.height + 5),
-          //   A1lib.encodeImageString(upscaled, 0, 0, upscaled.width, upscaled.height),
-          //   upscaled.width,
-          //   10000,
-          // )
+        if (SETTINGS.debug) {
+          overlay(OVERLAYS.default, () => {
+            // const upscaled = processImage(img, { scale: 5 })
+            // alt1.overLayImage(
+            //   Math.round(alt1.rsWidth / 2 - upscaled.width / 2),
+            //   Math.round(alt1.rsHeight *.3 - upscaled.height / 2) + i * (upscaled.height + 5),
+            //   A1lib.encodeImageString(upscaled, 0, 0, upscaled.width, upscaled.height),
+            //   upscaled.width,
+            //   10000,
+            // )
 
-          alt1.overLayRect(
-            0xffff00ff,
-            cropX,
-            rowY,
-            img.width,
-            img.height,
-            10000,
-            1
-          )
-          alt1.overLayRect(
-            0xff00ffff,
-            cropX + debugArea.x,
-            rowY + debugArea.y,
-            debugArea.w,
-            debugArea.h,
-            10000,
-            1
-          );
+            alt1.overLayRect(
+              0xffff00ff,
+              cropX,
+              rowY,
+              img.width,
+              img.height,
+              10000,
+              1
+            )
+            alt1.overLayRect(
+              0xff00ffff,
+              cropX + debugArea.x,
+              rowY + debugArea.y,
+              debugArea.w,
+              debugArea.h,
+              10000,
+              1
+            );
 
-        }, { reset: false });
+          }, { reset: false });
+        }
 
       }
 
