@@ -102,7 +102,7 @@ let cameraAngle = null;
 
 let failedGoal = false;
 
-let partyListRowBounds = [];
+let partyList = [];
 let partyListCaptures = [];
 
 const OVERLAYS = {
@@ -138,24 +138,11 @@ const GREEN = 0xff33aa33
 const ORANGE = 0xffff8800
 
 const TEAM_MEMBER_COLORS = [
-  // [210, 53, 0], // [187,60,25], //
-  // [2, 133, 129], // [0, 137, 133], //
-  // [73, 109, 30],
-  // [128, 130, 37],
-  // [97, 113, 83],
-
-  // Icon colors
-  // [114, 39, 16],
-  // [50, 124, 122],
-  // [76, 116, 31],
-  // [136, 139, 39],
-  // [46, 53, 42],
-
-  [186, 52, 6],
-  [8, 123, 118],
-  [68, 116, 7],
-  [130, 134, 6],
-  [100, 120, 87],
+  [210, 53, 0],
+  [0, 137, 133],
+  [72, 129, 0],
+  [145, 150, 37],
+  [109, 134, 95],
 ]
 
 const CARDINAL_DIRECTIONS = ['North', 'North-East', 'East', 'South-East', 'South', 'South-West', 'West', 'North-West'];
@@ -300,8 +287,8 @@ function handleAlt1Pressed(event) {
   // }
   // else
   if (partyListOverlayVisibleUntil > Date.now() || findDgIcon()) {
-    for (let i = 0; i < partyListRowBounds.length; i++) {
-      const bounds = partyListRowBounds[i];
+    for (let i = 0; i < partyList.length; i++) {
+      const { bounds } = partyList[i] || {};
       if (x >= bounds.x && x <= bounds.x + bounds.width && y >= bounds.y && y <= bounds.y + bounds.height) {
         playerIndex = i;
         console.log('Player index set to', i);
@@ -327,8 +314,8 @@ function handleAlt1Pressed(event) {
   }
   else if (SETTINGS.alt1TogglePartyOverlay) {
     overlay(OVERLAYS.members, () => {
-      for (let i = 0; i < partyListRowBounds.length; i++) {
-        const bounds = partyListRowBounds[i];
+      for (let i = 0; i < partyList.length; i++) {
+        const { bounds } = partyList[i] || {};
         alt1.overLayImage(bounds.x, bounds.y, partyListCaptures[i], bounds.width, 5000)
         alt1.overLayRect(
           A1lib.mixColor(...TEAM_MEMBER_COLORS[i]),
@@ -1590,8 +1577,62 @@ function findDgIcon() {
   return matches[0];
 }
 
+function readChatboxName() {
+  // Read name from chatbox (hard-coded to bottom left)
+  // TODO: Scan for chatbox bubble -> find location of pure white pixels to the left of it -> read around there?
+  const posX = 0;
+  const posY = alt1.rsHeight - 28;
+  const width = 250;
+  const height = 24;
+  alt1.overLayRect(0xffff0000, posX, posY, width, height, 10000, 1);
+  const { text: name, debugArea} = OCR.findReadLine(
+    A1lib.capture(posX, posY, width, height),
+    FONTS.chatbox_12pt, [
+      [255, 255, 255],
+    ],
+    10, // Somewhere within the text, seems to matter less than Y
+    12, // Vertical center, important
+  );
+
+  return name;
+}
+
+function removeDgInterfaceBackground(imageData, textY) {
+  const { width, height, data } = imageData;
+  const r = 50;
+  const g = 45;
+  const b = 40;
+
+  for (let y = 0; y < height; y++) {
+    for (let x = 0; x < width; x++) {
+      const i = (y * width + x) * 4;
+      const r = data[i + 0];
+      const g = data[i + 1];
+      const b = data[i + 2];
+
+      if (
+        (y < textY) ||
+        (Math.abs(r - 50) < 4 && Math.abs(g - 45) < 4 && Math.abs(b - 40) < 4)
+      ) {
+        data[i + 0] = 0;
+        data[i + 1] = 0;
+        data[i + 2] = 0;
+        data[i + 3] = 255;
+      }
+    }
+  }
+
+  return imageData;
+}
+
 function scanInterface() {
   clearTimeout(timeouts.scanInterface);
+  if (!FONTS.chatbox_12pt) {
+    console.log('Fonts not loaded, retrying scanInterface');
+    timeouts.scanInterface = setTimeout(scanInterface, 600);
+    return;
+  }
+
   const start = performance.now();
 
   const dgIcon = findDgIcon();
@@ -1614,47 +1655,96 @@ function scanInterface() {
   // );
   const rowHeight = 22;
   const rowX = dgIcon.x;
-  const firstRowLineY = dgIcon.y + DG_ICON.height - DG_INTERFACE_ROW_END.height;
+  const firstRowLineBottomY = dgIcon.y + DG_ICON.height;
 
-  const rowLineBind = alt1.bindRegion(rowX, firstRowLineY, alt1.rsWidth - rowX, DG_INTERFACE_ROW_END.height);
+  const rowLineBind = alt1.bindRegion(rowX, firstRowLineBottomY - DG_INTERFACE_ROW_END.height, alt1.rsWidth - rowX, DG_INTERFACE_ROW_END.height);
   const rowLineMatches = JSON.parse(alt1.bindFindSubImg(rowLineBind, DG_INTERFACE_ROW_END.icon, DG_INTERFACE_ROW_END.width, 0, 0, alt1.rsWidth - rowX, DG_INTERFACE_ROW_END.height));
   const rowEnd = rowLineMatches[0];
 
   if (rowEnd) {
-    const rowWidth = rowEnd.x > 160 ? 160 : rowEnd.x;
+    const rowWidth = rowEnd.x > 120 ? 120 : rowEnd.x;
     const cropX = rowX + Math.floor((rowEnd.x - rowWidth) / 2);
 
-    partyListRowBounds = [];
+    partyList = [];
     partyListCaptures = [];
     overlay(OVERLAYS.members, () => {
+      const debugReadLines = [
+        `We are: ${readChatboxName() || '-'}`,
+      ];
       for (let i = 0; i < 5; i++) {
-        const rowY = firstRowLineY + rowHeight * i + DG_INTERFACE_ROW_END.height - rowHeight;
+        const rowY = firstRowLineBottomY + rowHeight * i - rowHeight;
         const color = TEAM_MEMBER_COLORS[i];
+
+        let img = A1lib.capture(cropX, rowY, rowWidth, rowHeight - DG_INTERFACE_ROW_END.height);
+        const imgStr = A1lib.encodeImageString(img, 0, 0, img.width, img.height);
+        partyListCaptures.push(imgStr);
+        img = removeDgInterfaceBackground(img, 5);
+
         alt1.overLayRect(
           A1lib.mixColor(...color),
           cropX,
           rowY,
-          rowWidth,
-          rowHeight - DG_INTERFACE_ROW_END.height,
+          img.width,
+          img.height,
           1000, 1
         );
 
-        partyListRowBounds.push({
+        const bounds = {
           x: cropX,
           y: rowY,
-          width: rowWidth,
-          height: rowHeight - DG_INTERFACE_ROW_END.height
-        });
+          width: img.width,
+          height: img.height,
+        };
+        const member = { bounds };
+        partyList.push(member);
 
-        const img = A1lib.capture(cropX, rowY, rowWidth, rowHeight - DG_INTERFACE_ROW_END.height);
-        const imgStr = A1lib.encodeImageString(img, 0, 0, img.width, img.height);
-        partyListCaptures.push(imgStr);
+        const { text, debugArea} = OCR.findReadLine(
+          img,
+          FONTS.chatbox_12pt, [
+            color,
+          ],
+          Math.round(img.width / 2),
+          Math.round(img.height / 2),
+        );
+        if (text) {
+          debugReadLines.push(`Player ${i+1}: ${text}`);
+          member.name = text;
+        }
 
-        // for (const font of Object.keys(Alt1Fonts)) {
-        //   const text = OCR.findReadLine(img, Alt1Fonts[font], [color], Math.floor(rowWidth / 2), Math.floor(rowHeight / 2));
-        //   console.log(text.text, font, text);
-        // }
+        overlay(OVERLAYS.default, () => {
+          // const upscaled = processImage(img, { scale: 5 })
+          // alt1.overLayImage(
+          //   Math.round(alt1.rsWidth / 2 - upscaled.width / 2),
+          //   Math.round(alt1.rsHeight *.3 - upscaled.height / 2) + i * (upscaled.height + 5),
+          //   A1lib.encodeImageString(upscaled, 0, 0, upscaled.width, upscaled.height),
+          //   upscaled.width,
+          //   10000,
+          // )
+
+          alt1.overLayRect(
+            0xffff00ff,
+            cropX,
+            rowY,
+            img.width,
+            img.height,
+            10000,
+            1
+          )
+          alt1.overLayRect(
+            0xff00ffff,
+            cropX + debugArea.x,
+            rowY + debugArea.y,
+            debugArea.w,
+            debugArea.h,
+            10000,
+            1
+          );
+
+        }, { reset: false });
+
       }
+
+      console.log(debugReadLines.join('\n'));
     });
   }
 
@@ -2005,8 +2095,8 @@ function updateDebugOverlays() {
     showSelectedChat(reader.pos);
     alt1.overLayRect(0xffff00ff, mapX, mapY, mapWidth, mapHeight, 1000, 5);
 
-    for (let i = 0; i < partyListRowBounds.length; i++) {
-      const bounds = partyListRowBounds[i];
+    for (let i = 0; i < partyList.length; i++) {
+      const { bounds } = partyList[i] || {};
       alt1.overLayRect(0xffff00ff, bounds.x, bounds.y, bounds.width, bounds.height, 1000, i === playerIndex ? 3 : 1);
     }
 
