@@ -1615,7 +1615,12 @@ function removeDgInterfaceBackground(imageData, textY) {
 
       if (
         (y < textY) ||
-        (Math.abs(r - 50) < 4 && Math.abs(g - 45) < 4 && Math.abs(b - 40) < 4)
+        (r === 43 && g === 40 && b === 34) ||
+        (r === 50 && g === 46 && b === 40) ||
+        (r === 50 && g === 48 && b === 40) ||
+        (r === 51 && g === 48 && b === 40) ||
+        (r === 51 && g === 46 && b === 40) ||
+        false
       ) {
         data[i + 0] = 0;
         data[i + 1] = 0;
@@ -1706,7 +1711,7 @@ function scanInterface() {
           FONTS.chatbox_12pt, [
             color,
           ],
-          Math.round(img.width / 2),
+          Math.round(img.width / 2) - 10,
           Math.round(img.height / 2),
         );
         if (text) {

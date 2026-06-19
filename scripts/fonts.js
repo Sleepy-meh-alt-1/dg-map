@@ -8,7 +8,7 @@ const FONTS = {};
     {
       "basey": 9,
       "spacewidth": 3,
-      "treshold": 0.5,
+      "treshold": 0.3,
       "color": [
         127,
         169,
