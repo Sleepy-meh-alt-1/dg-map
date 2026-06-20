@@ -104,6 +104,7 @@ let failedGoal = false;
 
 let partyList = [];
 let partyListCaptures = [];
+let rsName = ""
 
 const OVERLAYS = {
   default: 'default',
@@ -1577,28 +1578,118 @@ function findDgIcon() {
   return matches[0];
 }
 
+
+async function highscoreAPICall(){
+  const skills = ["Overall", "Attack", "Defence", "Strength", "Constitution", "Ranged", "Prayer", "Magic", "Cooking",
+                  "Woodcutting", "Fletching", "Fishing", "Firemaking", "Crafting", "Smithing", "Mining", "Herblore",
+                  "Agility", "Thieving", "Slayer", "Farming", "Runecrafting", "Hunter", "Construction", "Summoning",
+                  "Dungeoneering", "Divination", "Invention", "Archaeology", "Necromancy"];
+                  
+  rsName = readChatboxName();
+
+  if (!rsName) {
+    console.log("Could not detect RSN");
+    return;
+  }
+
+  try {
+    const response = await fetch(
+      `https://sleepy-dg-api.sleepy-meh.workers.dev/?player=${encodeURIComponent(rsName)}`
+    );
+
+    if (!response.ok) {
+      throw new Error(`HTTP ${response.status}`);
+    }
+
+    const text = await response.text();
+
+    const lines = text.trim().split("\n");
+    const playerSkills = {};
+
+    skills.forEach((skill, index) => {
+      if (!lines[index]) return;
+
+      const [, level] = lines[index].split(",");
+      playerSkills[skill] = Number(level);
+
+    });
+
+    for (const skill of SKILL_ICONS) {
+      const playerLevel = playerSkills[skill.name];
+      
+      if (playerLevel) {
+        skill.max_level = playerLevel;
+      }
+    }
+
+  } catch (e) {
+
+    console.error(
+      `Failed to load highscores for ${rsName}`,
+      e
+    );
+  }
+}
+
 function readChatboxName() {
-  // Read name from chatbox (hard-coded to bottom left)
-  // TODO: Scan for chatbox bubble -> find location of pure white pixels to the left of it -> read around there?
-  const posX = 0;
-  const posY = alt1.rsHeight - 28;
-  const width = 250;
+  const posX = reader.pos.mainbox.rect.x;
+  const posY = reader.pos.mainbox.rect.y + reader.pos.mainbox.rect.height;
+  const width = reader.pos.mainbox.rect.width;
   const height = 24;
 
-  if (SETTINGS.debug) {
-    alt1.overLayRect(0xffff0000, posX, posY, width, height, 10000, 1);
-  }
-  const { text: name, debugArea} = OCR.findReadLine(
-    A1lib.capture(posX, posY, width, height),
-    FONTS.chatbox_12pt, [
-      [255, 255, 255],
-    ],
-    10, // Somewhere within the text, seems to matter less than Y
-    12, // Vertical center, important
-  );
+  const img = A1lib.capture(posX, posY, width, height);
 
-  return name;
+  // Scan horizontally through the area below the chatbox.
+  // The vertical position is fairly consistent, but titles/prefixes can
+  // shift the player's name left or right, so we brute-force the X position.
+  for (let x = 0; x < width; x += 5) {
+    try {
+      const result = OCR.findReadLine(
+        img,
+        FONTS.chatbox_12pt,
+        [[255, 255, 255]],
+        x,
+        10
+      );
+
+      if (!result.text?.trim()) {
+        continue;
+      }
+
+      let name = result.text.trim();
+
+      // The chat speech bubble is sometimes interpreted as punctuation
+      // (usually a quote character) by OCR. Strip common garbage characters
+      // from the start/end while preserving valid characters inside the name.
+      name = name.replace(
+        /^[`'"[{(<> ]+|[`'"\]})<> ]+$/g,
+        ""
+      );
+
+      // Temporary rollout/debug overlay.
+      // Show the detected RSN so players can easily spot OCR mistakes and report them while
+      if (/*SETTINGS.debug &&*/ name) {
+        const message =
+          `Detected RSN: '${name}'\nWrong? Please report it`;
+
+        alt1.overLayText(
+          message,
+          0xffffffff,
+          18,
+          Math.floor(alt1.rsWidth / 2) - 250,
+          40,
+          5000
+        );
+      }
+
+      return name;
+
+    } catch (e) {}
+  }
+
+  return "";
 }
+
 
 function removeDgInterfaceBackground(imageData, textY) {
   const { width, height, data } = imageData;
@@ -1677,7 +1768,7 @@ function scanInterface() {
     partyListCaptures = [];
     overlay(OVERLAYS.members, () => {
       const debugReadLines = [
-        `We are: ${readChatboxName() || '-'}`,
+        `We are: ${rsName || '-'}`,
       ];
       for (let i = 0; i < 5; i++) {
         const rowY = firstRowLineBottomY + rowHeight * i - rowHeight;
@@ -2103,6 +2194,7 @@ function updateDebugOverlays() {
 
   overlay(OVERLAYS.debug, () => {
     showSelectedChat(reader.pos);
+
     alt1.overLayRect(0xffff00ff, mapX, mapY, mapWidth, mapHeight, 1000, 5);
 
     for (let i = 0; i < partyList.length; i++) {
@@ -2473,6 +2565,7 @@ window.addEventListener('load', () => {
       clearInterval(findChat);
       reader.pos.mainbox = reader.pos.boxes[0];
       showSelectedChat(reader.pos);
+      highscoreAPICall()
 
       document.getElementById("debugChatStatus").innerText = "Chat: Found";
       chatInterval = setInterval(() => {
