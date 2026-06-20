@@ -122,6 +122,36 @@
       width: 11px;
       margin: 1px;
     }
+
+    button {
+      padding: 4px 8px;
+      border: 1px solid #666;
+      border-radius: 4px;
+
+      background: #2b2b2b;
+      color: #ddd;
+
+      font-size: 12px;
+      cursor: pointer;
+
+      transition: background 0.15s ease,
+                  border-color 0.15s ease;
+    }
+
+    button:hover {
+      background: #3a3a3a;
+      border-color: #888;
+    }
+
+    button:active {
+      background: #1f1f1f;
+    }
+
+    button:disabled {
+      opacity: 0.5;
+      cursor: default;
+    }
+
   </style>
 
 </head>
@@ -149,6 +179,11 @@
       <label><input type="checkbox" data-setting="statsOverlay_projected" disabled> Projected: <span id="statProjected">-</span></label>
       <label><input type="checkbox" data-setting="statsOverlay_rpm" disabled> Rooms/Min: <span id="statRPM">-</span></label>
     </div>
+    <hr>
+
+      <button id="replayFloorBtn">
+        Replay Floor
+      </button>
   </div>
 
   <div class="panel" data-panel-key="settings">

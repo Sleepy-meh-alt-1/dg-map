@@ -106,6 +106,8 @@ let partyList = [];
 let partyListCaptures = [];
 let rsName = ""
 
+let floorReplay = [];
+
 const OVERLAYS = {
   default: 'default',
   members: 'members',
@@ -594,7 +596,11 @@ function startFloor() {
   currentKeyLocks = new Set();
   playerPath = [];
   failedGoal = false;
+  floorReplay = [];
   buildGrid();
+
+  saveFloorSnapshot("Floor_start")
+
   if (SETTINGS.highlightMyLocation) scanPlayerRoom();
   if (SETTINGS.highlightGatestone) highlightGatestone();
   if (SETTINGS.highlightCorridors) highlightCorridors();
@@ -1367,6 +1373,10 @@ function setRoomState(room) {
   //     console.log('Scanned', room.id, 'but found nothing');
   // }
 
+
+  const previousState = room.state;
+
+
   if (!state) {
     if (room.state)
       return console.log('Unable to determine state of room', room.id);
@@ -1379,6 +1389,12 @@ function setRoomState(room) {
   knownRooms.add(room.id);
 
   room.capture = A1lib.encodeImageString(img, 0, 0, img.width, img.height);
+
+
+
+  console.log(floorReplay.length);
+
+
   if (room.state === "visited") {
     if (room.crit === null)
       room.color = 0xffa0663d;
@@ -1480,6 +1496,17 @@ function setRoomState(room) {
       }
     }
   }
+
+    if (
+    previousState !== "visited" &&
+    room.state === "visited"
+  ) {
+    saveFloorSnapshot(
+      "room_visited",
+      room.id
+    );
+  }
+  
   updateDebugStats();
 }
 
@@ -1556,6 +1583,8 @@ function scanPlayerRoom() {
   if (playerPath[playerPath.length - 1] !== playerRoom?.id) {
     const prevRoomId = playerPath[playerPath.length - 1];
     playerPath.push(playerRoom?.id);
+
+
     if (prevRoomId) {
       const prevRoom = indexedRooms[prevRoomId];
       const img = A1lib.capture(prevRoom.x, prevRoom.y, prevRoom.width, prevRoom.height);
@@ -2189,6 +2218,30 @@ function findNearestRoom(predicate, { startRoom = null, traversal = "grid" } = {
   return null;
 }
 
+
+function saveFloorSnapshot(reason) {
+  floorReplay.push({
+    reason,
+    grid: structuredClone(grid)
+  });
+}
+
+let replayWindow = null;
+function replayFloor() {
+
+  console.log(floorReplay);
+
+  window.floorReplay = floorReplay;
+  
+  window.open(
+    "replay.html",
+    "dgReplay",
+    "width=1200,height=800"
+  );
+}
+
+
+
 function updateDebugOverlays() {
   if (!SETTINGS.debug) return;
 
@@ -2343,6 +2396,10 @@ document.getElementById("setStatsPosition").addEventListener("click", () => {
     alt1.clearTooltip();
   }
 });
+
+document.getElementById("replayFloorBtn").addEventListener("click", replayFloor);
+
+
 
 const SETTING_CHANGED_HANDLERS = {
 
