@@ -1,7 +1,7 @@
 const FONTS = {};
 
 (async () => {
-  const img = await A1lib.ImageDetect.imageDataFromUrl("/fonts/chatbox/12pt.data.png");
+  const img = await A1lib.ImageDetect.imageDataFromUrl("./fonts/chatbox/12pt.data.png");
 
   FONTS.chatbox_12pt = OCR.loadFontImage(
     img,
