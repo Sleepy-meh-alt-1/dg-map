@@ -633,7 +633,7 @@ function findMinimap() {
   if (!compass)
     return;
 
-  minimapX = compass.x - 18;
+  minimapX = compass.x - 23;
   minimapY = compass.y - 39;
   minimapWidth = mapButton.x + DG_MAP_ICON.width - minimapX + 20;
   minimapHeight = mapButton.y + DG_MAP_ICON.height - minimapY + 8;
@@ -650,6 +650,8 @@ function findCompass(limitX, limitY) {
   const matches = JSON.parse(alt1.bindFindSubImg(rsBind, COMPASS.icon, COMPASS.width, 0, 0, limitX || alt1.rsWidth, limitY || alt1.rsHeight));
   return matches[0];
 }
+
+
 
 function findMapButton() {
   const rsBind = alt1.bindRegion(0, 0, alt1.rsWidth, alt1.rsHeight);
@@ -903,33 +905,95 @@ function scanCompass() {
   const compassSize = 38;
   const compassRadius = compassSize / 2;
 
-  const img = A1lib.capture(minimapX + compassOffset, minimapY + compassOffset, compassSize, compassSize);
+  const img = A1lib.capture(minimapX-5 + compassOffset, minimapY + compassOffset, compassSize, compassSize);
+  alt1.overLayRect(
+  appColor,
+  minimapX + compassOffset,
+  minimapY + compassOffset,
+  compassSize,
+  compassSize,
+  1000,
+  2
+);
 
   let brightestRed, brightestRedX, brightestRedY;
-  for (let x = 0; x < compassSize; x++) {
-    for (let y = 0; y < compassSize; y++) {
+const centerX = 23;
+const centerY = 20;
 
-      // ignore pixels outside of compass circle
-      const centerOffset = Math.sqrt((x - compassRadius)**2 + (y - compassRadius)**2);
-      if (centerOffset > compassRadius) continue;
+let bestPixel = null;
+let bestScore = -Infinity;
 
-      const idx = (y * img.width + x) * 4;
-      const r = img.data[idx];
-      const g = img.data[idx + 1];
-      const b = img.data[idx + 2];
+for (let x = 0; x < compassSize; x++) {
+  for (let y = 0; y < compassSize; y++) {
 
-      const { h, s, l } = rgbToHsl(r, g, b);
-      if (h >= 0 && h <= 10 && s >= 50 && l >= 40) {
-        if (!brightestRed || r > brightestRed) {
-          brightestRed = r;
-          brightestRedX = x;
-          brightestRedY = y;
-        }
-      }
+    const dx = x - centerX;
+    const dy = y - centerY;
+    const distance = Math.sqrt(dx * dx + dy * dy);
+
+    // Needle exists in this band.
+    // Ignore centre and compass border.
+    if (distance < 5 || distance > 14)
+      continue;
+
+    const idx = (y * img.width + x) * 4;
+
+    const r = img.data[idx];
+    const g = img.data[idx + 1];
+    const b = img.data[idx + 2];
+
+    // Much simpler and stricter "is red?"
+    const redness = r - Math.max(g, b);
+
+    if (
+      r < 120 ||
+      redness < 50
+    ) {
+      continue;
+    }
+
+    /*
+     * Prefer:
+     *   1. strongly red pixels
+     *   2. pixels farther along the needle
+     */
+    const score =
+      redness +
+      distance * 8;
+
+    if (score > bestScore) {
+      bestScore = score;
+
+      bestPixel = {
+        x,
+        y,
+        r,
+        g,
+        b,
+        distance
+      };
     }
   }
+}
 
-  cameraAngle = (Math.atan2(compassRadius - brightestRedX - 1, compassRadius - brightestRedY) * 180 / Math.PI + 360) % 360;
+if (!bestPixel) {
+  console.log("Compass needle not detected");
+
+  timeouts.scanCompass = setTimeout(scanCompass, 50);
+  return;
+}
+
+const needleX = bestPixel.x;
+const needleY = bestPixel.y;
+cameraAngle = (
+  360 - (
+    Math.atan2(
+      needleX - centerX,
+      centerY - needleY
+    ) * 180 / Math.PI
+    + 360
+  ) % 360
+) % 360;
+  console.log(cameraAngle)
   const directionIndex = Math.round(cameraAngle / 45) % 8;
   const direction = CARDINAL_DIRECTIONS[directionIndex];
 
@@ -944,13 +1008,18 @@ function scanCompass() {
         200,
         2
       );
-      alt1.overLayLine(0xffff00ff, 3,
-        minimapX + compassOffset + compassSize/2 - 1,
-        minimapY + compassOffset + compassSize/2,
-        minimapX + compassOffset + brightestRedX - 1,
-        minimapY + compassOffset + brightestRedY,
-        200
-      );
+alt1.overLayLine(
+  0xffff00ff,
+  3,
+
+  Math.round(minimapX - 5 + compassOffset + centerX),
+  Math.round(minimapY + compassOffset + centerY),
+
+  Math.round(minimapX - 5 + compassOffset + needleX),
+  Math.round(minimapY + compassOffset + needleY),
+
+  200
+);
     });
 
 
@@ -1637,7 +1706,12 @@ function readChatboxName() {
   const width = reader.pos.mainbox.rect.width;
   const height = 24;
 
-  const img = A1lib.capture(posX, posY, width, height);
+  //const img = A1lib.capture(posX, posY, width, height);
+
+  const img = A1lib.capture(4, 223,250,90-68);
+
+  alt1.overLayRect(0xffffffff, 4, 223,250,90-68, 5000, 1);
+
 
   // Scan horizontally through the area below the chatbox.
   // The vertical position is fairly consistent, but titles/prefixes can
@@ -1647,7 +1721,7 @@ function readChatboxName() {
       const result = OCR.findReadLine(
         img,
         FONTS.chatbox_12pt,
-        [[255, 255, 255]],
+        [[243, 243, 243]],
         x,
         10
       );
@@ -1661,10 +1735,7 @@ function readChatboxName() {
       // The chat speech bubble is sometimes interpreted as punctuation
       // (usually a quote character) by OCR. Strip common garbage characters
       // from the start/end while preserving valid characters inside the name.
-      name = name.replace(
-        /^[`'"[{(<> ]+|[`'"\]})<> ]+$/g,
-        ""
-      );
+
 
       // Temporary rollout/debug overlay.
       // Show the detected RSN so players can easily spot OCR mistakes and report them while
